@@ -1,0 +1,79 @@
+export const TIME_PERIODS = {
+  DAY: 'day',
+  EVENING: 'evening',
+  NIGHT: 'night',
+  LATE_NIGHT: 'late_night',
+}
+
+export const TIME_RANGES = {
+  [TIME_PERIODS.DAY]: { start: 8, end: 16, label: 'Day', skyColor: 0x87ceeb, ambientAlpha: 0 },
+  [TIME_PERIODS.EVENING]: { start: 16, end: 21, label: 'Evening', skyColor: 0xff8c42, ambientAlpha: 0.25 },
+  [TIME_PERIODS.NIGHT]: { start: 21, end: 26, label: 'Night', skyColor: 0x1a1a2e, ambientAlpha: 0.6 },
+  [TIME_PERIODS.LATE_NIGHT]: { start: 26, end: 32, label: 'Late Night', skyColor: 0x0d0d1a, ambientAlpha: 0.75 },
+}
+
+export const ACTIVITIES = {
+  MOLKKY: {
+    id: 'molkky',
+    name: 'Mölkky',
+    icon: '🪵',
+    zone: 'molkky_field',
+    timePeriods: [TIME_PERIODS.DAY, TIME_PERIODS.EVENING],
+    prompt: 'Press E to play Mölkky!',
+    description: 'The sacred Finnish sport. First to exactly 50 wins.',
+  },
+  SUP: {
+    id: 'sup',
+    name: 'SUP Boarding',
+    icon: '🏄',
+    zone: 'dock',
+    timePeriods: [TIME_PERIODS.DAY],
+    prompt: 'Press E to SUP board!',
+    description: 'Stand Up Paddle. Mark insists he\'s the best.',
+  },
+  SAUNA: {
+    id: 'sauna',
+    name: 'Sauna',
+    icon: '🧖',
+    zone: 'sauna',
+    timePeriods: [TIME_PERIODS.EVENING, TIME_PERIODS.NIGHT],
+    prompt: 'Press E to enter the sauna!',
+    description: 'Löyly time. Survive as long as you can.',
+  },
+  GRILLING: {
+    id: 'grilling',
+    name: 'Grilling',
+    icon: '🔥',
+    zone: 'fire_pit',
+    timePeriods: [TIME_PERIODS.EVENING],
+    prompt: 'Press E to start grilling!',
+    description: 'Don\'t burn the sausages. Elliot is watching.',
+  },
+  DRINKING: {
+    id: 'drinking',
+    name: 'Drinking',
+    icon: '🍺',
+    zone: 'fire_pit',
+    timePeriods: [TIME_PERIODS.EVENING, TIME_PERIODS.NIGHT, TIME_PERIODS.LATE_NIGHT],
+    prompt: 'Press E to grab a drink!',
+    description: 'Elliot serves. Movement gets wobbly after a while.',
+  },
+  WEED: {
+    id: 'weed',
+    name: 'Smoking',
+    icon: '🌿',
+    zone: 'forest',
+    timePeriods: [TIME_PERIODS.NIGHT, TIME_PERIODS.LATE_NIGHT],
+    prompt: 'Press E to chill in the forest...',
+    description: 'Screen gets blurry. Time slows down. Nikkebre is already here.',
+  },
+  SWIMMING: {
+    id: 'swimming',
+    name: 'Swimming',
+    icon: '🏊',
+    zone: 'beach',
+    timePeriods: [TIME_PERIODS.DAY, TIME_PERIODS.EVENING],
+    prompt: 'Press E to jump in!',
+    description: 'Refreshing. Alwar might steal your towel.',
+  },
+}
