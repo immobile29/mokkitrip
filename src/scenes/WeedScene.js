@@ -16,12 +16,18 @@ const QUOTES = [
   'Yes. This is it. This is the thing.',
 ]
 
+// Nikkebre face position
+const NIKKE_CX = Math.round(W / 2)
+const NIKKE_CY = 198
+
+// Joint travels from Nikkebre's mouth area to the player's implied mouth at bottom
+const JOINT_AT_NIKKE  = { x: NIKKE_CX + 52, y: NIKKE_CY + 78 }
+const JOINT_AT_PLAYER = { x: W / 2 + 12,    y: 492 }
+
+const MIN_HIT_MS  = 700    // too short below this
+const MAX_HIT_MS  = 5000   // auto-release above this
+const TOTAL_HITS  = 3
 const TRIP_DURATION = 75000
-const BAR_W = 400
-const BAR_H = 36
-const BAR_X = (W - BAR_W) / 2
-const BAR_Y = 290
-const SWEET_FRAC = 0.22
 
 export class WeedScene extends Phaser.Scene {
   constructor() {
@@ -29,29 +35,61 @@ export class WeedScene extends Phaser.Scene {
   }
 
   create() {
-    this._phase = 'intro'
-    this._goodHits = 0
-    this._round = 0
-    this._orbs = []
-    this._blobs = []
-    this._orbGfxList = []
+    this._phase       = 'intro'
+    this._goodHits    = 0
+    this._hitsTaken   = 0
+    this._isHolding   = false
+    this._holdStartMs = 0
+    this._holdFrac    = 0
+    this._inCooldown  = false
+
+    // drift state
+    this._orbs          = []
+    this._blobs         = []
+    this._orbGfxList    = []
     this._orbsCollected = 0
-    this._tripStart = 0
-    this._driftDone = false
-    this._starX = W / 2
-    this._starY = H / 2
+    this._tripStart     = 0
+    this._driftDone     = false
+    this._starX  = W / 2
+    this._starY  = H / 2
     this._starVX = 0
     this._starVY = 0
-    this._flipH = false
+    this._flipH     = false
     this._flipTimer = 0
 
-    this._bgGfx     = this.add.graphics()
-    this._smokeGfx  = this.add.graphics().setVisible(false)
-    this._driftGfx  = this.add.graphics().setVisible(false)
-    this._markerGfx = this.add.graphics().setVisible(false)
+    this._bgGfx    = this.add.graphics()
+    this._nikkeGfx = this.add.graphics().setDepth(2).setVisible(false)
+    this._jointGfx = this.add.graphics().setDepth(4).setVisible(false)
+    this._driftGfx = this.add.graphics().setVisible(false)
 
-    this._keys = {
-      space: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
+    this._drawStaticBg()
+    this._buildNikkebreFace(this._nikkeGfx, NIKKE_CX, NIKKE_CY)
+    this._buildTexts()
+    this._bindKeys()
+
+    this._enterPhase('intro')
+    this.cameras.main.fadeIn(400, 0, 8, 4)
+  }
+
+  // ── KEY BINDING ──────────────────────────────────────────────────────────
+
+  _bindKeys() {
+    const spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
+
+    spaceKey.on('down', () => {
+      if (this._phase !== 'smoke' || this._isHolding || this._inCooldown) return
+      this._isHolding   = true
+      this._holdStartMs = this.time.now
+    })
+
+    spaceKey.on('up', () => {
+      if (this._phase !== 'smoke' || !this._isHolding) return
+      const held = this.time.now - this._holdStartMs
+      this._isHolding = false
+      this._releaseHit(held < MIN_HIT_MS ? 'too_short' : 'good')
+    })
+
+    this._moveKeys = {
       w:     this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
       s:     this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
       a:     this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
@@ -61,11 +99,6 @@ export class WeedScene extends Phaser.Scene {
       left:  this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
       right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
     }
-
-    this._drawStaticBg()
-    this._buildTexts()
-    this._enterPhase('intro')
-    this.cameras.main.fadeIn(400, 0, 8, 4)
   }
 
   // ── COLOUR HELPERS ────────────────────────────────────────────────────────
@@ -100,30 +133,140 @@ export class WeedScene extends Phaser.Scene {
   _drawStaticBg() {
     this._bgGfx.fillStyle(0x020c04)
     this._bgGfx.fillRect(0, 0, W, H)
-    // Subtle vignette darkening at edges
-    for (let i = 0; i < 7; i++) {
-      const m = i * 20
-      this._bgGfx.fillStyle(0x000000, 0.055 * (7 - i) / 7)
+    // Dark forest silhouette at top
+    this._bgGfx.fillStyle(0x081408)
+    for (let tx = 0; tx < W; tx += 38) {
+      const th = 80 + ((tx * 7 + 11) % 50)
+      this._bgGfx.fillTriangle(tx, th, tx + 19, 0, tx + 38, th)
+    }
+    // Vignette
+    for (let i = 0; i < 6; i++) {
+      const m = i * 22
+      this._bgGfx.fillStyle(0x000000, 0.05 * (6 - i) / 6)
       this._bgGfx.fillRect(m, m, W - m * 2, H - m * 2)
     }
+  }
+
+  // ── NIKKEBRE FACE ─────────────────────────────────────────────────────────
+
+  _buildNikkebreFace(g, cx, cy) {
+    // Dreadlocks — drawn first so they sit behind the head
+    const dreadColors = [0x2e1a08, 0x3e240e, 0x261408]
+    const dreads = [
+      { dx: -88, dy: -20, w: 13, h: 75 },
+      { dx: -62, dy: -48, w: 11, h: 92 },
+      { dx: -36, dy: -62, w: 10, h: 78 },
+      { dx:   0, dy: -82, w: 12, h: 58 },
+      { dx:  36, dy: -62, w: 10, h: 78 },
+      { dx:  62, dy: -48, w: 11, h: 92 },
+      { dx:  88, dy: -20, w: 13, h: 75 },
+    ]
+    dreads.forEach((d, i) => {
+      g.fillStyle(dreadColors[i % 3])
+      g.fillEllipse(cx + d.dx, cy + d.dy, d.w, d.h)
+      g.fillStyle(0x4e3012, 0.35)
+      g.fillEllipse(cx + d.dx, cy + d.dy + d.h * 0.28, d.w * 0.55, d.h * 0.22)
+    })
+
+    // Beanie hat in character's mint green
+    const hatBottom = cy - 56
+    g.fillStyle(0x1a1a1a)
+    g.fillEllipse(cx, hatBottom - 16, 180, 40)
+    g.fillStyle(0x4a9870)
+    g.fillRect(cx - 84, cy - 130, 168, 80)
+    g.fillEllipse(cx, hatBottom, 176, 36)
+    g.fillStyle(0x7dcea0)
+    g.fillRect(cx - 82, cy - 128, 164, 76)
+    g.fillEllipse(cx, hatBottom - 2, 168, 30)
+    g.fillStyle(0x4a9870)
+    g.fillRect(cx - 82, hatBottom - 20, 164, 10)
+    // Pom-pom
+    g.fillStyle(0xffffff, 0.85)
+    g.fillCircle(cx, cy - 130, 12)
+    g.fillStyle(0xe0f8f0, 0.5)
+    g.fillCircle(cx - 4, cy - 135, 7)
+
+    // Head — chubby, slightly wider than tall
+    g.fillStyle(0x000000, 0.22)
+    g.fillEllipse(cx + 4, cy + 4, 168, 178)
+    g.fillStyle(0xc89464)
+    g.fillEllipse(cx, cy, 166, 176)
+
+    // Chubby cheek blush
+    g.fillStyle(0xe0a060, 0.4)
+    g.fillCircle(cx - 56, cy + 22, 28)
+    g.fillCircle(cx + 56, cy + 22, 28)
+
+    // Eyes — heavy droopy stoner lids
+    const eyeL = cx - 36, eyeR = cx + 36, eyeY = cy - 18
+
+    g.fillStyle(0xffffff)
+    g.fillEllipse(eyeL, eyeY, 38, 24)
+    g.fillStyle(0x5a3818)
+    g.fillCircle(eyeL, eyeY + 4, 11)
+    g.fillStyle(0x000000)
+    g.fillCircle(eyeL, eyeY + 4, 6)
+    g.fillStyle(0xffffff, 0.6)
+    g.fillCircle(eyeL - 3, eyeY + 1, 3)
+    // Heavy upper eyelid (droopy)
+    g.fillStyle(0xc89464)
+    g.fillEllipse(eyeL, eyeY - 11, 40, 22)
+
+    g.fillStyle(0xffffff)
+    g.fillEllipse(eyeR, eyeY, 38, 24)
+    g.fillStyle(0x5a3818)
+    g.fillCircle(eyeR, eyeY + 4, 11)
+    g.fillStyle(0x000000)
+    g.fillCircle(eyeR, eyeY + 4, 6)
+    g.fillStyle(0xffffff, 0.6)
+    g.fillCircle(eyeR + 3, eyeY + 1, 3)
+    g.fillStyle(0xc89464)
+    g.fillEllipse(eyeR, eyeY - 11, 40, 22)
+
+    // Eyebrows — relaxed
+    g.fillStyle(0x3e2010)
+    g.fillRoundedRect(eyeL - 20, eyeY - 30, 38, 7, 3)
+    g.fillRoundedRect(eyeR - 18, eyeY - 30, 38, 7, 3)
+
+    // Nose
+    g.fillStyle(0xb07840, 0.75)
+    g.fillEllipse(cx, cy + 14, 26, 20)
+    g.fillStyle(0x1a1a1a, 0.15)
+    g.fillCircle(cx - 7, cy + 18, 6)
+    g.fillCircle(cx + 7, cy + 18, 6)
+
+    // Smile — gentle arc using short filled rects along a curve
+    g.fillStyle(0x7a4828)
+    for (let si = 0; si <= 10; si++) {
+      const st = si / 10
+      const sx = cx - 28 + st * 56
+      const sy = cy + 45 + Math.sin(st * Math.PI) * 10
+      g.fillRect(sx, sy, 5, 4)
+    }
+
+    // Light beard / stubble
+    g.fillStyle(0x3e2010, 0.25)
+    g.fillEllipse(cx, cy + 62, 112, 36)
+
+    // Right ear (visible at face edge)
+    g.fillStyle(0xb88050)
+    g.fillEllipse(cx + 83, cy + 5, 18, 28)
+    g.fillStyle(0xa07040)
+    g.fillEllipse(cx + 85, cy + 5, 10, 18)
   }
 
   // ── TEXTS ─────────────────────────────────────────────────────────────────
 
   _buildTexts() {
-    this._introText = this._mkTxt(W / 2, 160, 'Nikkebre hands you something.', 18, '#7dcea0')
-      .setOrigin(0.5).setAlpha(0)
-    this._subText = this._mkTxt(W / 2, 196, '"This is the good stuff."', 13, '#4a8a5a')
-      .setOrigin(0.5).setAlpha(0)
+    // Intro quote below face
+    this._introText = this._mkTxt(W / 2, NIKKE_CY + 118, '"Here bro."', 15, '#7dcea0')
+      .setOrigin(0.5).setAlpha(0).setDepth(5)
 
-    this._roundText = this._mkTxt(W / 2, 244, 'Round 1 / 3', 13, '#aaaaaa')
-      .setOrigin(0.5).setVisible(false)
+    this._hitCountText = this._mkTxt(W / 2, 22, '', 13, '#888888')
+      .setOrigin(0.5).setDepth(10).setVisible(false)
 
-    this._hitText = this._mkTxt(W / 2, BAR_Y + BAR_H + 54, '', 22, '#ffffff')
-      .setOrigin(0.5).setAlpha(0)
-
-    this._hintText = this._mkTxt(W / 2, H - 28, '[ SPACE ]  Take a hit', 13, '#555555')
-      .setOrigin(0.5).setVisible(false)
+    this._hintText = this._mkTxt(W / 2, H - 26, 'Hold [ SPACE ] to take a hit', 13, '#555555')
+      .setOrigin(0.5).setDepth(10).setVisible(false)
 
     this._orbText = this._mkTxt(18, 18, 'Vibes: 0 / 12', 13, '#7dcea0')
       .setDepth(10).setVisible(false)
@@ -147,34 +290,33 @@ export class WeedScene extends Phaser.Scene {
     this._phase = phase
 
     if (phase === 'intro') {
+      this._nikkeGfx.setAlpha(0).setVisible(true)
       this.tweens.add({
-        targets: [this._introText, this._subText],
+        targets: [this._nikkeGfx, this._introText],
         alpha: 1,
         duration: 900,
         ease: 'Sine.easeIn',
-        onComplete: () => this.time.delayedCall(1600, () => this._enterPhase('smoke')),
+        onComplete: () => this.time.delayedCall(1400, () => this._enterPhase('smoke')),
       })
       return
     }
 
     if (phase === 'smoke') {
-      this._round = 0
-      this._introText.setAlpha(0.2)
-      this._subText.setAlpha(0)
-      this._smokeGfx.setVisible(true)
-      this._markerGfx.setVisible(true)
+      this._introText.setVisible(false)
+      this._nikkeGfx.setAlpha(0.62)
+      this._hitCountText.setText(`Hits: 0 / ${TOTAL_HITS}`).setVisible(true)
       this._hintText.setVisible(true)
-      this._roundText.setVisible(true)
-      this._buildJointBar()
-      this._startRound()
+      this._jointGfx.setVisible(true)
+      this._inCooldown = false
+      this._hitsTaken  = 0
       return
     }
 
     if (phase === 'drift') {
-      [this._introText, this._subText, this._roundText,
-       this._hintText, this._hitText].forEach(t => t.setVisible(false))
-      this._smokeGfx.setVisible(false)
-      this._markerGfx.setVisible(false)
+      this._nikkeGfx.setVisible(false)
+      this._jointGfx.setVisible(false)
+      this._hitCountText.setVisible(false)
+      this._hintText.setVisible(false)
       this._driftGfx.setVisible(true)
       this._orbText.setVisible(true)
       this._timerBarBg.setVisible(true)
@@ -191,62 +333,131 @@ export class WeedScene extends Phaser.Scene {
     }
   }
 
-  // ── JOINT BAR ─────────────────────────────────────────────────────────────
+  // ── HIT MECHANIC ─────────────────────────────────────────────────────────
 
-  _buildJointBar() {
-    const g = this._smokeGfx
-    g.clear()
-    const steps = 60
-    for (let i = 0; i < steps; i++) {
-      const t = i / steps
-      const dist = Math.abs(t - 0.5) * 2
-      let color
-      if (dist < SWEET_FRAC) {
-        color = this._lerpColor(0x22dd22, 0x88ff44, 1 - dist / SWEET_FRAC)
-      } else {
-        const outer = (dist - SWEET_FRAC) / (1 - SWEET_FRAC)
-        color = outer < 0.5
-          ? this._lerpColor(0xddaa00, 0xcc2200, outer * 2)
-          : 0xcc2200
-      }
-      g.fillStyle(color)
-      g.fillRect(BAR_X + t * BAR_W, BAR_Y, BAR_W / steps + 1, BAR_H)
-    }
-    g.lineStyle(2, 0xffffff, 0.65)
-    g.strokeRect(BAR_X, BAR_Y, BAR_W, BAR_H)
-    g.lineStyle(1, 0xffffff, 0.25)
-    g.lineBetween(BAR_X + BAR_W / 2, BAR_Y - 3, BAR_X + BAR_W / 2, BAR_Y + BAR_H + 3)
-  }
+  _releaseHit(type) {
+    if (this._inCooldown) return
+    this._inCooldown = true
+    this._hitsTaken++
 
-  _startRound() {
-    this._round++
-    this._roundText.setText(`Round ${this._round} / 3`)
-    this._hitText.setAlpha(0)
-  }
-
-  _resolveHit(pos) {
-    const dist = Math.abs(pos - 0.5) * 2
-    const good = dist < SWEET_FRAC
-
-    if (good) {
+    if (type === 'too_short') {
+      this._showNikkeComment('come on bro, take a proper hit 🙄')
+    } else if (type === 'too_long') {
+      this._showNikkeComment('yo bro... leave me something as well 😤')
       this._goodHits++
-      const phrases = ['Deep.', 'Perfect.', 'Mmmm.']
-      const colors  = ['#88ff44', '#aaffaa', '#7dcea0']
-      const idx = Math.min(this._goodHits - 1, 2)
-      this._hitText.setText(phrases[idx]).setColor(colors[idx]).setAlpha(1)
-      this._spawnQuoteText(QUOTES[Math.min(this._goodHits - 1, QUOTES.length - 1)])
     } else {
-      this._hitText.setText('krhm... *blinks slowly*').setColor('#ff8844').setAlpha(1)
+      this._goodHits++
+      this._spawnSmokeEffect(JOINT_AT_PLAYER.x, JOINT_AT_PLAYER.y - 20)
+      const good = ['mmmm.', 'deep bro.', 'there you go.']
+      this._showNikkeComment(good[Math.min(this._goodHits - 1, 2)])
     }
 
-    this.time.delayedCall(800, () => {
-      this._hitText.setAlpha(0)
-      if (this._round < 3) {
-        this._startRound()
-      } else {
+    this._hitCountText.setText(`Hits: ${this._hitsTaken} / ${TOTAL_HITS}`)
+
+    this.time.delayedCall(this._hitsTaken >= TOTAL_HITS ? 1600 : 1100, () => {
+      if (this._hitsTaken >= TOTAL_HITS) {
         this._enterPhase('drift')
+      } else {
+        this._inCooldown = false
       }
     })
+  }
+
+  _showNikkeComment(text) {
+    const qt = this.add.text(W / 2, NIKKE_CY + 110, `"${text}"`, {
+      fontSize: '14px', fontFamily: 'monospace', color: '#7dcea0',
+      backgroundColor: '#00000099', padding: { x: 12, y: 6 },
+      stroke: '#000000', strokeThickness: 1,
+      wordWrap: { width: 440 }, align: 'center',
+    }).setOrigin(0.5).setDepth(12).setAlpha(0)
+
+    this.tweens.add({
+      targets: qt,
+      alpha: { from: 0, to: 1 },
+      y: { from: NIKKE_CY + 110, to: NIKKE_CY + 94 },
+      duration: 300,
+      hold: 900,
+      yoyo: true,
+      ease: 'Sine.easeInOut',
+      onComplete: () => qt.destroy(),
+    })
+  }
+
+  _spawnSmokeEffect(cx, cy) {
+    for (let i = 0; i < 5; i++) {
+      const sg = this.add.graphics().setDepth(8)
+      const ox = (Math.random() - 0.5) * 36
+      sg.fillStyle(0xbbbbbb, 0.32 - i * 0.04)
+      sg.fillCircle(ox, 0, 10 + i * 5)
+      sg.x = cx
+      sg.y = cy
+      this.tweens.add({
+        targets: sg,
+        x: cx + ox * 1.8,
+        y: cy - 60 - Math.random() * 30,
+        alpha: 0,
+        scaleX: 2.4,
+        scaleY: 2.4,
+        duration: 750 + i * 100,
+        delay: i * 65,
+        ease: 'Sine.easeOut',
+        onComplete: () => sg.destroy(),
+      })
+    }
+  }
+
+  // ── JOINT DRAWING ─────────────────────────────────────────────────────────
+
+  _drawJoint(g, jx, jy, isHolding, time) {
+    g.clear()
+
+    // Joint tilted at −20° — body rotated around its centre
+    const angle = -0.35
+    const cos = Math.cos(angle), sin = Math.sin(angle)
+    const len = 52, thick = 7, hw = len / 2, hh = thick / 2
+
+    const pt = (px, py) => ({
+      x: jx + px * cos - py * sin,
+      y: jy + px * sin + py * cos,
+    })
+
+    const [A, B, C, D] = [pt(-hw, -hh), pt(hw, -hh), pt(hw, hh), pt(-hw, hh)]
+    const [E, F, G, H] = [pt(hw - 11, -hh), pt(hw, -hh), pt(hw, hh), pt(hw - 11, hh)]
+
+    // Paper body (cream)
+    g.fillStyle(0xf0e8c0)
+    g.fillTriangle(A.x, A.y, B.x, B.y, C.x, C.y)
+    g.fillTriangle(A.x, A.y, C.x, C.y, D.x, D.y)
+
+    // Filter tip (brown)
+    g.fillStyle(0x8a5a28)
+    g.fillTriangle(E.x, E.y, F.x, F.y, G.x, G.y)
+    g.fillTriangle(E.x, E.y, G.x, G.y, H.x, H.y)
+
+    // Lit ember (left end)
+    const ember = pt(-hw, 0)
+    const pulse = isHolding
+      ? (0.85 + Math.sin(time / 70) * 0.15)
+      : (0.5  + Math.sin(time / 380) * 0.15)
+
+    g.fillStyle(0xff6600, 0.22 * pulse)
+    g.fillCircle(ember.x, ember.y, 13 * pulse)
+    g.fillStyle(0xff4400, 0.5 * pulse)
+    g.fillCircle(ember.x, ember.y, 7 * pulse)
+    g.fillStyle(0xff8800, pulse)
+    g.fillCircle(ember.x, ember.y, 4)
+    g.fillStyle(0xffdd00, pulse)
+    g.fillCircle(ember.x, ember.y, 2)
+
+    // Hold-progress arc around the ember
+    if (isHolding) {
+      const frac = Math.min((time - this._holdStartMs) / MAX_HIT_MS, 1)
+      const arcColor = frac > 0.82 ? 0xff2200 : frac > 0.52 ? 0xff8800 : 0x88ff44
+      g.lineStyle(2.5, arcColor, 0.78)
+      g.beginPath()
+      g.arc(ember.x, ember.y, 18, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2, false)
+      g.strokePath()
+    }
   }
 
   // ── DRIFT OBJECTS ─────────────────────────────────────────────────────────
@@ -314,14 +525,14 @@ export class WeedScene extends Phaser.Scene {
     const FORCE = 0.38
     const DRAG  = 0.985
     const MAX_V = 3.2
+    const keys  = this._moveKeys
 
     const flip = this._flipH ? -1 : 1
-    if (this._keys.a.isDown    || this._keys.left.isDown)  this._starVX -= FORCE * flip
-    if (this._keys.d.isDown    || this._keys.right.isDown) this._starVX += FORCE * flip
-    if (this._keys.w.isDown    || this._keys.up.isDown)    this._starVY -= FORCE
-    if (this._keys.s.isDown    || this._keys.down.isDown)  this._starVY += FORCE
+    if (keys.a.isDown    || keys.left.isDown)  this._starVX -= FORCE * flip
+    if (keys.d.isDown    || keys.right.isDown) this._starVX += FORCE * flip
+    if (keys.w.isDown    || keys.up.isDown)    this._starVY -= FORCE
+    if (keys.s.isDown    || keys.down.isDown)  this._starVY += FORCE
 
-    // Gentle centre gravity so player can't escape
     this._starVX += (W / 2 - this._starX) * 0.00018
     this._starVY += (H / 2 - this._starY) * 0.00018
 
@@ -339,7 +550,6 @@ export class WeedScene extends Phaser.Scene {
     const g = this._driftGfx
     g.clear()
 
-    // Hue-cycling pulsing rings
     const hueCycle = (time / 12000) % 1
     for (let i = 0; i < 12; i++) {
       const t = i / 12
@@ -352,7 +562,6 @@ export class WeedScene extends Phaser.Scene {
       g.fillCircle(W / 2, H / 2, (30 + i * 34) * pulse)
     }
 
-    // Move and draw blobs
     this._blobs.forEach(blob => {
       blob.x += blob.dx * 0.55
       blob.y += blob.dy * 0.55
@@ -362,11 +571,9 @@ export class WeedScene extends Phaser.Scene {
       blob.gfx.y = blob.y
     })
 
-    // Pulse orbs
     const orbPulse = 1 + Math.sin(time / 600) * 0.12
     this._orbGfxList.forEach(og => { if (og.scene) og.setScale(orbPulse) })
 
-    // Player star
     const glow = 12 + Math.sin(time / 400) * 3
     g.fillStyle(0xffd700, 0.20)
     g.fillCircle(this._starX, this._starY, glow + 10)
@@ -377,7 +584,6 @@ export class WeedScene extends Phaser.Scene {
     g.fillStyle(0xffffff, 1)
     g.fillCircle(this._starX - 2, this._starY - 2, 3)
 
-    // Control-flip indicator
     if (this._flipH) {
       g.fillStyle(0xff3388, 0.45)
       g.fillCircle(this._starX, this._starY, 26)
@@ -388,30 +594,29 @@ export class WeedScene extends Phaser.Scene {
 
   update(time, delta) {
     if (this._phase === 'smoke') {
-      const pos = (Math.sin(time * 0.0018) + 1) / 2
-      const ax = BAR_X + pos * BAR_W
-      const ay = BAR_Y + BAR_H + 14
-      this._markerGfx.clear()
-      this._markerGfx.fillStyle(0xffffff, 1)
-      this._markerGfx.fillTriangle(ax, ay - 14, ax - 9, ay + 5, ax + 9, ay + 5)
-      this._markerGfx.lineStyle(1, 0x000000, 0.5)
-      this._markerGfx.strokeTriangle(ax, ay - 14, ax - 9, ay + 5, ax + 9, ay + 5)
-
-      if (Phaser.Input.Keyboard.JustDown(this._keys.space)) {
-        this._resolveHit(pos)
+      // Auto-release when held too long
+      if (this._isHolding && (time - this._holdStartMs) >= MAX_HIT_MS) {
+        this._isHolding = false
+        this._releaseHit('too_long')
       }
+
+      // Smooth lerp joint position: 0 = at Nikke, 1 = at player mouth
+      const target = this._isHolding ? 1 : 0
+      this._holdFrac += (target - this._holdFrac) * 0.07 * (delta / 16.67)
+
+      const jx = JOINT_AT_NIKKE.x + (JOINT_AT_PLAYER.x - JOINT_AT_NIKKE.x) * this._holdFrac
+      const jy = JOINT_AT_NIKKE.y + (JOINT_AT_PLAYER.y - JOINT_AT_NIKKE.y) * this._holdFrac
+      this._drawJoint(this._jointGfx, jx, jy, this._isHolding, time)
     }
 
     if (this._phase === 'drift') {
       this._applyDriftPhysics(delta)
 
-      // Flip timer countdown
       if (this._flipH) {
         this._flipTimer -= delta
         if (this._flipTimer <= 0) this._flipH = false
       }
 
-      // Blob collisions
       for (const blob of this._blobs) {
         const dx = this._starX - blob.x
         const dy = this._starY - blob.y
@@ -423,7 +628,6 @@ export class WeedScene extends Phaser.Scene {
         }
       }
 
-      // Orb collection
       for (const orb of [...this._orbs]) {
         const dx = this._starX - orb.x
         const dy = this._starY - orb.y
@@ -432,8 +636,7 @@ export class WeedScene extends Phaser.Scene {
           this._orbs.splice(this._orbs.indexOf(orb), 1)
           this._orbsCollected++
           this._orbText.setText(`Vibes: ${this._orbsCollected} / 12`)
-          const qIdx = (this._orbsCollected - 1) % QUOTES.length
-          this._spawnQuoteText(QUOTES[qIdx])
+          this._spawnQuoteText(QUOTES[(this._orbsCollected - 1) % QUOTES.length])
           if (this._orbs.length === 0 && !this._driftDone) {
             this._driftDone = true
             this.time.delayedCall(900, () => this._enterPhase('end'))
@@ -441,7 +644,6 @@ export class WeedScene extends Phaser.Scene {
         }
       }
 
-      // Timer bar
       const elapsed = time - this._tripStart
       const frac = Math.max(0, 1 - elapsed / TRIP_DURATION)
       this._timerBar.setDisplaySize((W - 40) * frac, 6)
