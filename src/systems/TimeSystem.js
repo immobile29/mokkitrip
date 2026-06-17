@@ -60,4 +60,14 @@ export class TimeSystem {
   isActivityAvailable(activity) {
     return activity.timePeriods.includes(this.currentPeriod)
   }
+
+  jumpToHour(hour) {
+    this.gameHour = hour
+    this._elapsed = 0
+    const prev = this.currentPeriod
+    this.currentPeriod = this._getPeriodForHour(hour)
+    if (prev !== this.currentPeriod) {
+      this._listeners.forEach(cb => cb(this.currentPeriod, prev))
+    }
+  }
 }

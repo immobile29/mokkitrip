@@ -832,6 +832,62 @@ export class GameScene extends Phaser.Scene {
         padding: { x: 6, y: 4 },
       })
       .setScrollFactor(0).setDepth(16).setVisible(false)
+
+    this._buildTimePicker()
+  }
+
+  _buildTimePicker() {
+    const canvas = this.game.canvas
+    const parent = canvas.parentElement
+
+    const sel = document.createElement('select')
+    sel.id = '_gameTimePicker'
+    sel.style.cssText = [
+      'position:absolute',
+      'top:6px',
+      'right:6px',
+      'font-size:11px',
+      'font-family:monospace',
+      'padding:2px 4px',
+      'background:#0d1a2e',
+      'color:#f1c40f',
+      'border:1px solid #4a90d0',
+      'border-radius:3px',
+      'cursor:pointer',
+      'opacity:0.88',
+      'z-index:100',
+    ].join(';')
+
+    const options = [
+      { label: '☀️ Day (10:00)',        hour: 10 },
+      { label: '🌅 Evening (17:00)',    hour: 17 },
+      { label: '🌙 Night (22:00)',      hour: 22 },
+      { label: '🌑 Late Night (27:00)', hour: 27 },
+    ]
+    options.forEach(({ label, hour }) => {
+      const opt = document.createElement('option')
+      opt.value = hour
+      opt.textContent = label
+      sel.appendChild(opt)
+    })
+
+    sel.addEventListener('change', () => {
+      this.timeSystem.jumpToHour(Number(sel.value))
+    })
+
+    // Keep dropdown in sync when time advances past a period boundary
+    this._syncTimePicker = () => {
+      const period = this.timeSystem.currentPeriod
+      const map = { day: 10, evening: 17, night: 22, late_night: 27 }
+      sel.value = map[period] ?? 10
+    }
+    this.timeSystem.onPeriodChange(this._syncTimePicker)
+
+    parent.style.position = 'relative'
+    parent.appendChild(sel)
+    this._timePickerEl = sel
+
+    this.events.once('shutdown', () => sel.remove())
   }
 
   _buildAmbientOverlay() {
