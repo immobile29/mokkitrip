@@ -411,51 +411,92 @@ export class WeedScene extends Phaser.Scene {
   _drawJoint(g, jx, jy, isHolding, time) {
     g.clear()
 
-    // Joint tilted at −20° — body rotated around its centre
-    const angle = -0.35
+    // Angle lerps from tilted (at Nikke) to straight up (at player mouth, burn end away)
+    // -Math.PI/2 = vertical, ember at top, roach at bottom = player inhaling correctly
+    const angle = -0.62 + (-Math.PI / 2 - (-0.62)) * this._holdFrac
     const cos = Math.cos(angle), sin = Math.sin(angle)
-    const len = 52, thick = 7, hw = len / 2, hh = thick / 2
+    const len = 58, thick = 8, hw = len / 2, hh = thick / 2
 
+    // Local → world transform: ember end at -hw (top when vertical), roach end at +hw (bottom)
     const pt = (px, py) => ({
       x: jx + px * cos - py * sin,
       y: jy + px * sin + py * cos,
     })
 
+    // ── Body — rolling paper with visible green herb ──────────────────────
     const [A, B, C, D] = [pt(-hw, -hh), pt(hw, -hh), pt(hw, hh), pt(-hw, hh)]
-    const [E, F, G, H] = [pt(hw - 11, -hh), pt(hw, -hh), pt(hw, hh), pt(hw - 11, hh)]
 
-    // Paper body (cream)
-    g.fillStyle(0xf0e8c0)
+    // Rolling paper (off-white with slight green tint from herb inside)
+    g.fillStyle(0xe8efd0)
     g.fillTriangle(A.x, A.y, B.x, B.y, C.x, C.y)
     g.fillTriangle(A.x, A.y, C.x, C.y, D.x, D.y)
 
-    // Filter tip (brown)
-    g.fillStyle(0x8a5a28)
-    g.fillTriangle(E.x, E.y, F.x, F.y, G.x, G.y)
-    g.fillTriangle(E.x, E.y, G.x, G.y, H.x, H.y)
+    // Green herb bleed through the paper
+    g.fillStyle(0x5aaa2a, 0.30)
+    g.fillTriangle(A.x, A.y, B.x, B.y, C.x, C.y)
+    g.fillTriangle(A.x, A.y, C.x, C.y, D.x, D.y)
 
-    // Lit ember (left end)
-    const ember = pt(-hw, 0)
+    // Herb lumps (slightly darker green blobs along the body)
+    const herbPositions = [-0.30, 0.0, 0.28]
+    herbPositions.forEach(t => {
+      const hp = pt(t * hw, 0)
+      g.fillStyle(0x3a8a18, 0.35)
+      g.fillCircle(hp.x, hp.y, 5)
+      g.fillStyle(0x5ab828, 0.25)
+      g.fillCircle(hp.x, hp.y, 8)
+    })
+
+    // Rolling paper seam line
+    g.lineStyle(1, 0xc8d8a0, 0.5)
+    const seamA = pt(-hw + 2, 0), seamB = pt(hw - 10, 0)
+    g.lineBetween(seamA.x, seamA.y, seamB.x, seamB.y)
+    g.lineStyle(0, 0, 0)
+
+    // ── Twisted burning tip (ember end, at -hw) ───────────────────────────
+    // Pinched cone: narrows to a point past the body end
+    const twistTip  = pt(-hw - 10, 0)
+    const twistBase0 = pt(-hw, -hh * 0.8)
+    const twistBase1 = pt(-hw, hh * 0.8)
+    g.fillStyle(0xc8cc80)
+    g.fillTriangle(twistBase0.x, twistBase0.y, twistBase1.x, twistBase1.y, twistTip.x, twistTip.y)
+
+    // Tiny green herb at the twist opening
+    g.fillStyle(0x44aa22, 0.9)
+    g.fillCircle(pt(-hw, 0).x, pt(-hw, 0).y, 3)
+
+    // ── Roach / crutch (mouth end, at +hw) ───────────────────────────────
+    // Small cardboard crutch — yellowish, slightly narrower
+    const [R0, R1, R2, R3] = [pt(hw - 9, -hh * 0.85), pt(hw, -hh * 0.85),
+                               pt(hw, hh * 0.85),       pt(hw - 9, hh * 0.85)]
+    g.fillStyle(0xd4b04a)
+    g.fillTriangle(R0.x, R0.y, R1.x, R1.y, R2.x, R2.y)
+    g.fillTriangle(R0.x, R0.y, R2.x, R2.y, R3.x, R3.y)
+    // Spiral lines on the roach
+    g.lineStyle(1, 0xa88030, 0.6)
+    g.lineBetween(R0.x, R0.y, R3.x, R3.y)
+    g.lineStyle(0, 0, 0)
+
+    // ── Ember glow at twisted tip ─────────────────────────────────────────
     const pulse = isHolding
       ? (0.85 + Math.sin(time / 70) * 0.15)
       : (0.5  + Math.sin(time / 380) * 0.15)
 
-    g.fillStyle(0xff6600, 0.22 * pulse)
-    g.fillCircle(ember.x, ember.y, 13 * pulse)
-    g.fillStyle(0xff4400, 0.5 * pulse)
-    g.fillCircle(ember.x, ember.y, 7 * pulse)
+    g.fillStyle(0xff6600, 0.20 * pulse)
+    g.fillCircle(twistTip.x, twistTip.y, 14 * pulse)
+    g.fillStyle(0xff4400, 0.50 * pulse)
+    g.fillCircle(twistTip.x, twistTip.y, 7 * pulse)
     g.fillStyle(0xff8800, pulse)
-    g.fillCircle(ember.x, ember.y, 4)
-    g.fillStyle(0xffdd00, pulse)
-    g.fillCircle(ember.x, ember.y, 2)
+    g.fillCircle(twistTip.x, twistTip.y, 4)
+    g.fillStyle(0xffee44, pulse)
+    g.fillCircle(twistTip.x, twistTip.y, 2)
 
-    // Hold-progress arc around the ember
+    // ── Hold-progress arc around the ember ───────────────────────────────
     if (isHolding) {
       const frac = Math.min((time - this._holdStartMs) / MAX_HIT_MS, 1)
       const arcColor = frac > 0.82 ? 0xff2200 : frac > 0.52 ? 0xff8800 : 0x88ff44
       g.lineStyle(2.5, arcColor, 0.78)
       g.beginPath()
-      g.arc(ember.x, ember.y, 18, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2, false)
+      g.arc(twistTip.x, twistTip.y, 20, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2, false)
       g.strokePath()
     }
   }
