@@ -28,7 +28,7 @@ const ZONES = {
 
 const NPC_SPAWN = {
   jon:      { x: 1005, y: 540 },
-  alwar:    { x: 600,  y: 878 },
+  alwar:    { x: 600,  y: 858 },
   elliot:   { x: 240,  y: 614 },  // south of cottage door
   schmaxel: { x: 1200, y: 893 },
   mark:     { x: 1120, y: 878 },
@@ -37,7 +37,7 @@ const NPC_SPAWN = {
   nixu:     { x: 170,  y: 614 },  // south of cottage door
   nikkebre: { x: 1165, y: 454 },  // south of sauna door
   immobile: { x: 1180, y: 888 },
-  allu:     { x: 380,  y: 882 },
+  allu:     { x: 380,  y: 858 },
 }
 
 // Door trigger zones (auto-enter when player walks through)
@@ -56,8 +56,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    // Water collision: restrict to LAKE_Y so player cannot walk on water
-    this.physics.world.setBounds(0, 0, MAP_W, LAKE_Y)
+    // World extends past docks; water barriers in _buildColliders() block open water
+    this.physics.world.setBounds(0, 0, MAP_W, 960)
     this.cameras.main.setBounds(0, 0, MAP_W, MAP_H)
 
     this._createParticleTexture()
@@ -115,6 +115,15 @@ export class GameScene extends Phaser.Scene {
     addBuilding(ZONES.sauna.x,      ZONES.sauna.y,      ZONES.sauna.width,      ZONES.sauna.height,      88, 42)
     addBuilding(ZONES.rape_shack.x, ZONES.rape_shack.y, ZONES.rape_shack.width, ZONES.rape_shack.height, 48, 28)
     addBuilding(ZONES.huussi.x,     ZONES.huussi.y,     ZONES.huussi.width,     ZONES.huussi.height,     36, 30)
+
+    // Water barriers — shore walls with dock-width gaps so player/NPCs can walk on docks but not open water
+    const dL = ZONES.dock_left  // x:130, y:820, width:200, height:80  → bottom y:900
+    const dR = ZONES.dock        // x:1060, y:850, width:270, height:100 → bottom y:950
+    addWall(0,               LAKE_Y, dL.x,                         16)  // shore left of left dock
+    addWall(dL.x + dL.width, LAKE_Y, dR.x - (dL.x + dL.width),   16)  // shore between docks
+    addWall(dR.x + dR.width, LAKE_Y, MAP_W - (dR.x + dR.width),   16)  // shore right of right dock
+    addWall(dL.x, dL.y + dL.height - 4, dL.width, 8)                   // south cap of left dock
+    addWall(dR.x, dR.y + dR.height - 4, dR.width, 8)                   // south cap of right dock
 
     this.physics.add.collider(this.player.getPhysicsBody(), walls)
     this._walls = walls
