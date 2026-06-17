@@ -411,9 +411,9 @@ export class WeedScene extends Phaser.Scene {
   _drawJoint(g, jx, jy, isHolding, time) {
     g.clear()
 
-    // Angle lerps from tilted (at Nikke) to straight up (at player mouth, burn end away)
-    // -Math.PI/2 = vertical, ember at top, roach at bottom = player inhaling correctly
-    const angle = -0.62 + (-Math.PI / 2 - (-0.62)) * this._holdFrac
+    // π/2 = vertical, ember at top (away from player), roach at bottom (player's mouth)
+    // Adding π to both endpoints flips the previous backwards orientation
+    const angle = (Math.PI - 0.62) + (Math.PI / 2 - (Math.PI - 0.62)) * this._holdFrac
     const cos = Math.cos(angle), sin = Math.sin(angle)
     const len = 58, thick = 8, hw = len / 2, hh = thick / 2
 
