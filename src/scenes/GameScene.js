@@ -116,14 +116,26 @@ export class GameScene extends Phaser.Scene {
     addBuilding(ZONES.rape_shack.x, ZONES.rape_shack.y, ZONES.rape_shack.width, ZONES.rape_shack.height, 48, 28)
     addBuilding(ZONES.huussi.x,     ZONES.huussi.y,     ZONES.huussi.width,     ZONES.huussi.height,     36, 30)
 
-    // Water barriers — shore walls with dock-width gaps so player/NPCs can walk on docks but not open water
+    // Water barriers — keep players on docks, off open water
     const dL = ZONES.dock_left  // x:130, y:820, width:200, height:80  → bottom y:900
     const dR = ZONES.dock        // x:1060, y:850, width:270, height:100 → bottom y:950
+    const dLwh = dL.y + dL.height - LAKE_Y  // water-portion height of left dock:  30
+    const dRwh = dR.y + dR.height - LAKE_Y  // water-portion height of right dock: 80
+
+    // Horizontal shore walls at waterline — gaps where docks enter the water
     addWall(0,               LAKE_Y, dL.x,                         16)  // shore left of left dock
     addWall(dL.x + dL.width, LAKE_Y, dR.x - (dL.x + dL.width),   16)  // shore between docks
     addWall(dR.x + dR.width, LAKE_Y, MAP_W - (dR.x + dR.width),   16)  // shore right of right dock
-    addWall(dL.x, dL.y + dL.height - 4, dL.width, 8)                   // south cap of left dock
-    addWall(dR.x, dR.y + dR.height - 4, dR.width, 8)                   // south cap of right dock
+
+    // Vertical side walls along each dock edge below the waterline (prevent sideways exit into water)
+    addWall(dL.x - 8,        LAKE_Y, 8, dLwh)   // left dock — west side
+    addWall(dL.x + dL.width, LAKE_Y, 8, dLwh)   // left dock — east side
+    addWall(dR.x - 8,        LAKE_Y, 8, dRwh)   // right dock — west side
+    addWall(dR.x + dR.width, LAKE_Y, 8, dRwh)   // right dock — east side
+
+    // South caps — stop player at the end of each dock
+    addWall(dL.x, dL.y + dL.height - 4, dL.width, 8)
+    addWall(dR.x, dR.y + dR.height - 4, dR.width, 8)
 
     this.physics.add.collider(this.player.getPhysicsBody(), walls)
     this._walls = walls
