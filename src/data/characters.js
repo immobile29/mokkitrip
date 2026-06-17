@@ -93,9 +93,9 @@ export const CHARACTERS = {
     startZone: 'sauna',
     isChubby: true,
   },
-  JUHO: {
-    id: 'juho',
-    name: 'Juho',
+  IMMOBILE: {
+    id: 'immobile',
+    name: 'Immobile',
     title: 'Sports Tryhard',
     color: 0x1abc9c,
     bodyColor: 0x17a589,

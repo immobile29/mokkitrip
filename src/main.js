@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { BootScene } from './scenes/BootScene.js'
 import { MenuScene } from './scenes/MenuScene.js'
 import { GameScene } from './scenes/GameScene.js'
+import { RoomScene } from './scenes/RoomScene.js'
 
 const config = {
   type: Phaser.AUTO,
@@ -12,7 +13,7 @@ const config = {
     default: 'arcade',
     arcade: { gravity: { y: 0 }, debug: false },
   },
-  scene: [BootScene, MenuScene, GameScene],
+  scene: [BootScene, MenuScene, GameScene, RoomScene],
   parent: 'game-container',
   scale: {
     mode: Phaser.Scale.FIT,

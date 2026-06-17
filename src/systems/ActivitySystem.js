@@ -25,7 +25,7 @@ export class ActivitySystem {
         playerY >= rect.y && playerY <= rect.y + rect.height
       ) {
         const activity = this._getActivityForZone(zoneId)
-        if (activity && this.timeSystem.isActivityAvailable(activity)) {
+        if (activity) {
           this.activeZone = activity
           if (this.promptText) {
             this.promptText.setText(activity.prompt)
@@ -39,7 +39,9 @@ export class ActivitySystem {
   }
 
   _getActivityForZone(zoneId) {
-    return Object.values(ACTIVITIES).find(a => a.zone === zoneId) ?? null
+    return Object.values(ACTIVITIES).find(
+      a => a.zone === zoneId && this.timeSystem.isActivityAvailable(a)
+    ) ?? null
   }
 
   tryActivate() {
