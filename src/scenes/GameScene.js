@@ -16,6 +16,7 @@ const ZONES = {
   parking:      { x: 20,   y: 215,  width: 230,  height: 160 },
   cottage:      { x: 130,  y: 380,  width: 220,  height: 180 },
   huussi:       { x: 20,   y: 600,  width: 110,  height: 110 },
+  tikanheitto:  { x: 140,  y: 600,  width: 80,   height: 90  },
   molkky_field: { x: 480,  y: 450,  width: 200,  height: 140 },
   sauna:        { x: 1080, y: 250,  width: 220,  height: 180 },
   terrace:      { x: 950,  y: 430,  width: 400,  height: 250 },
@@ -89,6 +90,17 @@ export class GameScene extends Phaser.Scene {
     this.events.on('wake', () => {
       this._inTransition = false
       this.cameras.main.fadeIn(240, 0, 0, 0)
+    })
+
+    this.events.on('activity:start', (activity) => {
+      if (activity.id === 'tikanheitto') {
+        this._inTransition = true
+        this.cameras.main.fadeOut(200, 0, 0, 0)
+        this.time.delayedCall(220, () => {
+          this.scene.launch('TikanheittoScene')
+          this.scene.sleep()
+        })
+      }
     })
   }
 

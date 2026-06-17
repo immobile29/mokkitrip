@@ -103,4 +103,13 @@ export const ACTIVITIES = {
     prompt: 'Press E to play darts!',
     description: 'Board is next to the outhouse. Aim carefully.',
   },
+  TIKANHEITTO: {
+    id: 'tikanheitto',
+    name: 'Tikanheitto',
+    icon: '🪃',
+    zone: 'tikanheitto',
+    timePeriods: [TIME_PERIODS.DAY, TIME_PERIODS.EVENING, TIME_PERIODS.NIGHT],
+    prompt: 'Press E to play Tikanheitto!',
+    description: 'Finnish darts. Five throws. Aim for the bullseye.',
+  },
 }
