@@ -117,7 +117,8 @@ export class Player {
 
   update() {
     const speedMod = 1 - this.drunkLevel * 0.06
-    const speed = SPEED * Math.max(0.3, speedMod)
+    const highMod  = 1 - this.highLevel  * 0.05
+    const speed = SPEED * Math.max(0.3, speedMod) * Math.max(0.45, highMod)
 
     const { up, down, left, right, upArr, downArr, leftArr, rightArr } = this.cursors
     const goUp    = up.isDown    || upArr.isDown

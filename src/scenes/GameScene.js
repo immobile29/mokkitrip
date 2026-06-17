@@ -90,6 +90,7 @@ export class GameScene extends Phaser.Scene {
     this.events.on('wake', () => {
       this._inTransition = false
       this.cameras.main.fadeIn(240, 0, 0, 0)
+      if (this.player.highLevel > 0) this._startHighWearoff()
     })
 
     this.events.on('activity:start', (activity) => {
@@ -105,6 +106,13 @@ export class GameScene extends Phaser.Scene {
         this.cameras.main.fadeOut(200, 0, 0, 0)
         this.time.delayedCall(220, () => {
           this.scene.launch('MolkkyScene')
+          this.scene.sleep()
+        })
+      } else if (activity.id === 'weed') {
+        this._inTransition = true
+        this.cameras.main.fadeOut(200, 0, 0, 0)
+        this.time.delayedCall(220, () => {
+          this.scene.launch('WeedScene')
           this.scene.sleep()
         })
       }
@@ -1022,5 +1030,27 @@ export class GameScene extends Phaser.Scene {
     } else {
       this.cameras.main.setAngle(0)
     }
+
+    if (high > 0) {
+      const zoom = 1 + Math.sin(time / 1400) * 0.018 * high
+      this.cameras.main.setZoom(zoom)
+    } else {
+      this.cameras.main.setZoom(1)
+    }
+  }
+
+  _startHighWearoff() {
+    if (this._highWearoffTimer) this._highWearoffTimer.remove()
+    this._highWearoffTimer = this.time.addEvent({
+      delay: 8000,
+      callback: () => {
+        if (this.player.highLevel > 0) this.player.highLevel--
+        if (this.player.highLevel === 0) {
+          this._highWearoffTimer.remove()
+          this._highWearoffTimer = null
+        }
+      },
+      repeat: -1,
+    })
   }
 }
