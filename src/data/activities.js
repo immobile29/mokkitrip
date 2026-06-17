@@ -20,7 +20,7 @@ export const ACTIVITIES = {
     zone: 'molkky_field',
     timePeriods: [TIME_PERIODS.DAY, TIME_PERIODS.EVENING],
     prompt: 'Press E to play Mölkky!',
-    description: 'The sacred Finnish sport. First to exactly 50 wins.',
+    description: 'Finnish throwing game. Hit exactly 25 to win — go over and you lose.',
   },
   SUP: {
     id: 'sup',

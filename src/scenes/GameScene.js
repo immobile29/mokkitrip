@@ -100,6 +100,13 @@ export class GameScene extends Phaser.Scene {
           this.scene.launch('TikanheittoScene')
           this.scene.sleep()
         })
+      } else if (activity.id === 'molkky') {
+        this._inTransition = true
+        this.cameras.main.fadeOut(200, 0, 0, 0)
+        this.time.delayedCall(220, () => {
+          this.scene.launch('MolkkyScene')
+          this.scene.sleep()
+        })
       }
     })
   }

@@ -4,6 +4,7 @@ import { MenuScene } from './scenes/MenuScene.js'
 import { GameScene } from './scenes/GameScene.js'
 import { RoomScene } from './scenes/RoomScene.js'
 import { TikanheittoScene } from './scenes/TikanheittoScene.js'
+import { MolkkyScene } from './scenes/MolkkyScene.js'
 
 const config = {
   type: Phaser.AUTO,
@@ -14,7 +15,7 @@ const config = {
     default: 'arcade',
     arcade: { gravity: { y: 0 }, debug: false },
   },
-  scene: [BootScene, MenuScene, GameScene, RoomScene, TikanheittoScene],
+  scene: [BootScene, MenuScene, GameScene, RoomScene, TikanheittoScene, MolkkyScene],
   parent: 'game-container',
   scale: {
     mode: Phaser.Scale.FIT,
