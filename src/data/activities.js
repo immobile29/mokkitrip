@@ -112,4 +112,22 @@ export const ACTIVITIES = {
     prompt: 'Press E to play Tikanheitto!',
     description: 'Finnish darts. Five throws. Aim for the bullseye.',
   },
+  DRINKING_TERRACE: {
+    id: 'drinking',
+    name: 'Drinking',
+    icon: '🍺',
+    zone: 'terrace',
+    timePeriods: [TIME_PERIODS.EVENING, TIME_PERIODS.NIGHT, TIME_PERIODS.LATE_NIGHT],
+    prompt: 'Press E to grab a drink on the terrace!',
+    description: 'Elliot set up a bar table on the terrace. Classic.',
+  },
+  DRINKING_PALJU_BAR: {
+    id: 'drinking',
+    name: 'Drinks by the palju',
+    icon: '🍺',
+    zone: 'palju_bar',
+    timePeriods: [TIME_PERIODS.EVENING, TIME_PERIODS.NIGHT, TIME_PERIODS.LATE_NIGHT],
+    prompt: 'Press E to grab a cold one by the palju!',
+    description: "Someone left a cooler next to the hot tub. Finnish logic.",
+  },
 }
