@@ -303,7 +303,7 @@ export class WeedScene extends Phaser.Scene {
 
     if (phase === 'smoke') {
       this._introText.setVisible(false)
-      this._nikkeGfx.setAlpha(0.62)
+      this._nikkeGfx.setAlpha(1)
       this._hitCountText.setText(`Hits: 0 / ${TOTAL_HITS}`).setVisible(true)
       this._hintText.setVisible(true)
       this._jointGfx.setVisible(true)
@@ -328,8 +328,25 @@ export class WeedScene extends Phaser.Scene {
     }
 
     if (phase === 'end') {
-      this.cameras.main.fadeOut(500, 0, 8, 4)
-      this.time.delayedCall(550, () => this._exit())
+      const W = this.scale.width
+      const H = this.scale.height
+      const title = this.add.text(W / 2, H / 2, 'Tripping balls', {
+        fontSize: '54px',
+        fontFamily: 'monospace',
+        color: '#7dcea0',
+        stroke: '#000000',
+        strokeThickness: 5,
+      }).setOrigin(0.5).setDepth(15).setAlpha(0)
+      this.tweens.add({
+        targets: title,
+        alpha: 1,
+        duration: 600,
+        ease: 'Sine.easeIn',
+        onComplete: () => this.time.delayedCall(1800, () => {
+          this.cameras.main.fadeOut(500, 0, 8, 4)
+          this.time.delayedCall(550, () => this._exit())
+        }),
+      })
     }
   }
 
