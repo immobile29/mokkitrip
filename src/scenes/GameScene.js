@@ -22,6 +22,7 @@ const ZONES = {
   terrace:      { x: 950,  y: 430,  width: 400,  height: 250 },
   fire_pit:     { x: 960,  y: 490,  width: 100,  height: 80  },
   palju:        { x: 1240, y: 480,  width: 110,  height: 90  },
+  palju_bar:    { x: 1255, y: 422,  width: 80,   height: 56  },
   dock:         { x: 1060, y: 850,  width: 270,  height: 100 },
   dock_left:    { x: 130,  y: 820,  width: 200,  height: 80  },
   beach:        { x: 0,    y: 860,  width: 1050, height: 80  },
@@ -90,7 +91,9 @@ export class GameScene extends Phaser.Scene {
     this.events.on('wake', () => {
       this._inTransition = false
       this.cameras.main.fadeIn(240, 0, 0, 0)
-      if (this.player.highLevel > 0) this._startHighWearoff()
+      if (this.player.highLevel > 0)  this._startHighWearoff()
+      if (this.player.drunkLevel > 0) this._startDrunkWearoff()
+      if (this.player.drunkLevel >= 8) this._playVomitSequence()
     })
 
     this.events.on('activity:start', (activity) => {
@@ -113,6 +116,13 @@ export class GameScene extends Phaser.Scene {
         this.cameras.main.fadeOut(200, 0, 0, 0)
         this.time.delayedCall(220, () => {
           this.scene.launch('WeedScene')
+          this.scene.sleep()
+        })
+      } else if (activity.id === 'drinking') {
+        this._inTransition = true
+        this.cameras.main.fadeOut(200, 0, 0, 0)
+        this.time.delayedCall(220, () => {
+          this.scene.launch('DrinkingScene', { zone: activity.zone })
           this.scene.sleep()
         })
       }
@@ -1093,6 +1103,73 @@ export class GameScene extends Phaser.Scene {
     } else {
       this.cameras.main.setZoom(1)
     }
+  }
+
+  _startDrunkWearoff() {
+    if (this._drunkWearoffTimer) this._drunkWearoffTimer.remove()
+    this._drunkWearoffTimer = this.time.addEvent({
+      delay: 16000,
+      callback: () => {
+        if (this.player.drunkLevel > 0) this.player.drunkLevel--
+        if (this.player.drunkLevel === 0) {
+          this._drunkWearoffTimer.remove()
+          this._drunkWearoffTimer = null
+        }
+      },
+      repeat: -1,
+    })
+  }
+
+  _playVomitSequence() {
+    if (this._vomiting) return
+    this._vomiting = true
+    const W = this.scale.width
+    const H = this.scale.height
+
+    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x22aa22, 0)
+      .setScrollFactor(0).setDepth(30)
+    const txt = this.add.text(W / 2, H / 2, '🤢  *bleeeeugh*', {
+      fontSize: '36px',
+      fontFamily: 'monospace',
+      color: '#88ff44',
+      stroke: '#002200',
+      strokeThickness: 4,
+      backgroundColor: '#00220099',
+      padding: { x: 20, y: 12 },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(31).setAlpha(0)
+
+    this.cameras.main.shake(300, 0.015)
+    this.tweens.add({
+      targets: overlay,
+      alpha: 0.55,
+      duration: 300,
+      ease: 'Sine.easeIn',
+      onComplete: () => {
+        this.tweens.add({
+          targets: txt,
+          alpha: 1,
+          y: H / 2 - 20,
+          duration: 200,
+          ease: 'Sine.easeOut',
+          onComplete: () => {
+            this.time.delayedCall(1400, () => {
+              this.player.drunkLevel = Math.max(0, this.player.drunkLevel - 3)
+              this.tweens.add({
+                targets: [overlay, txt],
+                alpha: 0,
+                duration: 600,
+                ease: 'Sine.easeOut',
+                onComplete: () => {
+                  overlay.destroy()
+                  txt.destroy()
+                  this._vomiting = false
+                },
+              })
+            })
+          },
+        })
+      },
+    })
   }
 
   _startHighWearoff() {
