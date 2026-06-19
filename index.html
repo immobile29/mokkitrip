@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mökkitrip Simulator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0d0d1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: monospace;
+    }
+    #game-container canvas {
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    /* ── PASSWORD GATE ───────────────────────────────────────────────── */
+    #gate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #0d0d1a;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.5s ease;
+    }
+    #gate-box {
+      display: flex; flex-direction: column; align-items: center; gap: 18px;
+      background: #12122a;
+      border: 1px solid #2a4a6a;
+      border-radius: 10px;
+      padding: 52px 72px;
+    }
+    #gate-title {
+      font-size: 26px; color: #f1c40f;
+      letter-spacing: 3px;
+    }
+    #gate-sub {
+      font-size: 11px; color: #3a5a7a;
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+    #gate-pw {
+      background: #0a0a1e;
+      border: 1px solid #2a4a6a;
+      color: #f0f0f0;
+      font-family: monospace; font-size: 16px;
+      padding: 10px 18px; border-radius: 5px;
+      outline: none; width: 230px;
+      text-align: center; letter-spacing: 3px;
+    }
+    #gate-pw:focus { border-color: #4a90d0; }
+    #gate-btn {
+      background: #1a3a5a; color: #f1c40f;
+      border: 1px solid #4a90d0;
+      font-family: monospace; font-size: 14px;
+      padding: 9px 36px; border-radius: 5px;
+      cursor: pointer; letter-spacing: 1px;
+      transition: background 0.15s;
+    }
+    #gate-btn:hover { background: #2a4a7a; }
+    #gate-err {
+      font-size: 12px; color: #e74c3c;
+      display: none;
+    }
+  </style>
+  <script type="module" crossorigin src="./assets/index-BxcNdGog.js"></script>
+</head>
+<body>
+  <!-- Password gate — sits on top while game loads in background -->
+  <div id="gate">
+    <div id="gate-box">
+      <div id="gate-title">🏕 Mökkitrip Simulator</div>
+      <div id="gate-sub">private access</div>
+      <input type="password" id="gate-pw" placeholder="password..." autofocus />
+      <button id="gate-btn">Enter ↵</button>
+      <div id="gate-err">wrong password 🔒</div>
+    </div>
+  </div>
+  <script>
+    function gateCheck() {
+      if (document.getElementById('gate-pw').value === 'mokkitrip2026') {
+        const g = document.getElementById('gate')
+        g.style.opacity = '0'
+        setTimeout(() => g.remove(), 500)
+      } else {
+        document.getElementById('gate-err').style.display = 'block'
+        const pw = document.getElementById('gate-pw')
+        pw.value = ''
+        pw.focus()
+      }
+    }
+    document.getElementById('gate-btn').addEventListener('click', gateCheck)
+    document.getElementById('gate-pw').addEventListener('keydown', e => {
+      if (e.key === 'Enter') gateCheck()
+    })
+  </script>
+
+  <div id="game-container"></div>
+</body>
+</html>
