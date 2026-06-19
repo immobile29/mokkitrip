@@ -58,7 +58,7 @@ export class DialogueSystem {
       .setScrollFactor(0).setDepth(21).setVisible(false)
 
     this._hint = this.scene.add
-      .text(width - 30, boxY + boxH - 10, '[E] close', {
+      .text(width - 30, boxY + boxH - 10, '[Q] close', {
         fontSize: '11px', color: '#6080a0',
       })
       .setOrigin(1, 1).setScrollFactor(0).setDepth(21).setVisible(false)
@@ -123,7 +123,7 @@ export class DialogueSystem {
     this._portraitLetter.setText(character.name[0].toUpperCase())
     this._nameTag.setText(`${character.name}  —  ${character.title}`)
     this._bodyText.setText('')
-    this._hint.setText('[E] skip').setVisible(true)
+    this._hint.setText('[Q] skip').setVisible(true)
 
     this._setResponsesVisible(false)
     ;[this._bg, this._portrait, this._portraitRing, this._portraitLetter,
@@ -205,7 +205,7 @@ export class DialogueSystem {
     this._typeTimer = 0
     this._bodyText.setText('')
     this._phase = 'reaction'
-    this._hint.setText('[E] close').setVisible(true)
+    this._hint.setText('[Q] close').setVisible(true)
   }
 
   _setResponsesVisible(visible) {

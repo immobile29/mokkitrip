@@ -118,9 +118,27 @@ export class RoomScene extends Phaser.Scene {
     this._internalDoorReady = false
     this.time.delayedCall(500, () => { this._internalDoorReady = true })
 
+    // Never Have I Ever prompt — only shown in cottage_living at night/late night
+    this._neverPrompt = null
+    if (this._roomId === 'cottage_living') {
+      this._neverPrompt = this.add.text(vw / 2, oy + def.h - 52, '[E] Play Never Have I Ever', {
+        fontSize: '14px', color: '#f0e8c8',
+        backgroundColor: '#00000099',
+        padding: { x: 14, y: 8 },
+        stroke: '#000000', strokeThickness: 2,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(10).setVisible(false)
+    }
+
     this._eKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E)
     this._escKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC)
     this._escKey.on('down', () => this._exit())
+
+    // When waking from a minigame launched inside the room (e.g. NeverScene),
+    // reset exiting flag and fade back in so the room is usable again.
+    this.events.on('wake', () => {
+      this._exiting = false
+      this.cameras.main.fadeIn(300, 0, 0, 0)
+    })
 
     this.cameras.main.fadeIn(220, 0, 0, 0)
   }
@@ -820,11 +838,32 @@ export class RoomScene extends Phaser.Scene {
 
     if (nearExit && !this._exiting) this._exit()
 
+    if (this._neverPrompt) {
+      const gs = this.scene.get('GameScene')
+      const period = gs?.timeSystem?.currentPeriod
+      const isNight = period === 'night' || period === 'late_night'
+      this._neverPrompt.setVisible(isNight)
+    }
+
     if (!this._exiting && Phaser.Input.Keyboard.JustDown(this._eKey)) {
-      if (ply > exitY - 50) this._exit()
+      if (this._neverPrompt?.visible) {
+        this._launchNeverScene()
+      } else if (ply > exitY - 50) {
+        this._exit()
+      }
     }
 
     if (this._internalDoorReady) this._checkInternalDoors(plx, ply)
+  }
+
+  _launchNeverScene() {
+    if (this._exiting) return
+    this._exiting = true
+    this.cameras.main.fadeOut(200, 0, 0, 0)
+    this.time.delayedCall(220, () => {
+      this.scene.launch('NeverScene')
+      this.scene.sleep()
+    })
   }
 
   _checkInternalDoors(plx, ply) {

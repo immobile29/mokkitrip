@@ -19,6 +19,8 @@ export class ActivitySystem {
 
   update(playerX, playerY) {
     this.activeZone = null
+    let bestArea = Infinity
+
     for (const [zoneId, rect] of this.zones) {
       if (
         playerX >= rect.x && playerX <= rect.x + rect.width &&
@@ -26,16 +28,23 @@ export class ActivitySystem {
       ) {
         const activity = this._getActivityForZone(zoneId)
         if (activity) {
-          this.activeZone = activity
-          if (this.promptText) {
-            this.promptText.setText(activity.prompt)
-            this.promptText.setVisible(true)
+          const area = rect.width * rect.height
+          if (area < bestArea) {
+            bestArea = area
+            this.activeZone = activity
           }
-          return
         }
       }
     }
-    if (this.promptText) this.promptText.setVisible(false)
+
+    if (this.promptText) {
+      if (this.activeZone) {
+        this.promptText.setText(this.activeZone.prompt)
+        this.promptText.setVisible(true)
+      } else {
+        this.promptText.setVisible(false)
+      }
+    }
   }
 
   _getActivityForZone(zoneId) {

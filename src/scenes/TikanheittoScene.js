@@ -345,6 +345,7 @@ export class TikanheittoScene extends Phaser.Scene {
   // ── exit ──────────────────────────────────────────────────────────────────
 
   _exit() {
+    this.scene.get('GameScene')?.events.emit('result:tikanheitto', { score: this._score })
     this.cameras.main.fadeOut(300, 0, 0, 0)
     this.time.delayedCall(320, () => {
       this.scene.stop()

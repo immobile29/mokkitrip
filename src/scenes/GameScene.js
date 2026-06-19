@@ -19,13 +19,16 @@ const ZONES = {
   tikanheitto:  { x: 140,  y: 600,  width: 80,   height: 90  },
   molkky_field: { x: 480,  y: 450,  width: 200,  height: 140 },
   sauna:        { x: 1080, y: 250,  width: 220,  height: 180 },
+  lawn:         { x: 380,  y: 290,  width: 300,  height: 180 },
   terrace:      { x: 950,  y: 430,  width: 400,  height: 250 },
   fire_pit:     { x: 960,  y: 490,  width: 100,  height: 80  },
   palju:        { x: 1240, y: 480,  width: 110,  height: 90  },
   palju_bar:    { x: 1255, y: 422,  width: 80,   height: 56  },
-  dock:         { x: 1060, y: 850,  width: 270,  height: 100 },
-  dock_left:    { x: 130,  y: 820,  width: 200,  height: 80  },
-  beach:        { x: 0,    y: 860,  width: 1050, height: 80  },
+  dock:          { x: 1060, y: 850,  width: 270,  height: 100 },
+  dock_left:     { x: 130,  y: 820,  width: 200,  height: 80  },
+  dock_edge:     { x: 1300, y: 855,  width: 70,   height: 65  },
+  beach:         { x: 0,    y: 860,  width: 1050, height: 80  },
+  mission_board: { x: 1130, y: 196,  width: 140,  height: 52  },
 }
 
 const NPC_SPAWN = {
@@ -42,12 +45,40 @@ const NPC_SPAWN = {
   allu:     { x: 380,  y: 858 },
 }
 
+const HIDE_SEEK_SPOTS = {
+  jon:      { x: 200,  y: 100 },
+  alwar:    { x: 1450, y: 180 },
+  elliot:   { x: 71,   y: 750 },
+  schmaxel: { x: 60,   y: 280 },
+  mark:     { x: 1280, y: 900 },
+  edu:      { x: 960,  y: 80  },
+  robert:   { x: 580,  y: 520 },
+  nixu:     { x: 240,  y: 410 },
+  nikkebre: { x: 1290, y: 510 },
+  immobile: { x: 200,  y: 840 },
+  allu:     { x: 900,  y: 680 },
+}
+
+const HIDE_SEEK_QUOTES = {
+  jon:      "Dude I found a mushroom while waiting. Do NOT eat it.",
+  alwar:    "*squawk* I am leaf. You no see me.",
+  elliot:   "I was NOT hiding near the toilet by choice. Stomach issues.",
+  schmaxel: "I was right here the whole time. You just weren't cool enough to notice.",
+  mark:     "I was mentally preparing a nautical escape route. Respect the process.",
+  edu:      "SHHH! There are things in this shack better left unfound.",
+  robert:   "I was networking with the mölkky pins. Very promising investors.",
+  nixu:     "A king never hides. I was merely... observing from the shadows.",
+  nikkebre: "...did I fall asleep? Oh. Found. Cool.",
+  immobile: "I can run 100m in 9.8 seconds. I chose to stand here.",
+  allu:     "I was yellow. You could see me from literal space.",
+}
+
 // Door trigger zones (auto-enter when player walks through)
 const DOOR_TRIGGERS = {
-  cottage:    { x: 212, y: 556, w: 46, h: 22, roomId: 'cottage_living',  label: 'Cottage'  },
-  sauna:      { x: 1162, y: 426, w: 52, h: 22, roomId: 'sauna_lobby',    label: 'Sauna'    },
-  rape_shack: { x: 862, y: 141, w: 40, h: 22, roomId: 'rape_shack',      label: 'Shack'    },
-  huussi:     { x: 50,  y: 706, w: 42, h: 22, roomId: 'huussi',          label: 'Huussi'   },
+  cottage:    { x: 212,  y: 556, w: 46, h: 22, roomId: 'cottage_living', label: 'Cottage' },
+  rape_shack: { x: 862,  y: 141, w: 40, h: 22, roomId: 'rape_shack',     label: 'Shack'   },
+  huussi:     { x: 50,   y: 706, w: 42, h: 22, roomId: 'huussi',         label: 'Huussi'  },
+  sauna:      { x: 1162, y: 426, w: 46, h: 22, roomId: 'sauna_lobby',    label: 'Sauna'   },
 }
 // How many extra pixels south the approach-prompt zone extends past each trigger
 const DOOR_APPROACH_SOUTH = 90
@@ -87,6 +118,29 @@ export class GameScene extends Phaser.Scene {
 
     this._inTransition = false
     this._nearDoorRoomId = null
+    this._hideSeekMode = false
+    this._hideSeekFoundSet = new Set()
+    this._hideSeekFoundCount = 0
+
+    // ── MISSION STATE ─────────────────────────────────────────────────────
+    const MISSION_DEFS = [
+      { id: 'talk_alwar',         label: 'Talk to Alwar',                   hint: 'Find Alwar on the beach, press Q' },
+      { id: 'drink_puke',         label: 'Drink until you puke',            hint: 'Reach drunk level 8+' },
+      { id: 'tikanheitto_gold',   label: 'Get gold in Tikanheitto',         hint: 'Score 35+ out of 50' },
+      { id: 'molkky_win',         label: 'Complete a game of Mölkky',       hint: 'Hit exactly 25 to win' },
+      { id: 'dockjump_600',       label: 'Get 600+ points in Dock Jump',    hint: 'Chain tricks off the dock' },
+      { id: 'hideseek_win',       label: 'Win Hide and Seek',               hint: 'Find all 11 friends in time' },
+      { id: 'smoke_weed',         label: 'Smoke weed with Nikkebre',        hint: 'Forest zone at night' },
+      { id: 'molkky_3throws',     label: 'Win Mölkky in 3 throws or less', hint: 'Hit exactly 25 in ≤ 3 throws' },
+      { id: 'hideseek_drunkhigh', label: 'Win H&S while drunk AND high',    hint: 'Get wasted first, then seek' },
+      { id: 'tikanheitto_50',     label: 'Perfect 50 in Tikanheitto',       hint: '5 bullseyes in a row' },
+    ]
+    this._missions      = {}
+    for (const d of MISSION_DEFS) this._missions[d.id] = { ...d, done: false }
+    this._activeMission    = null
+    this._missionSecsLeft  = 0
+    this._missionTickEvent = null
+
     // Reposition player when returning from a room
     this.events.on('wake', () => {
       this._inTransition = false
@@ -94,6 +148,29 @@ export class GameScene extends Phaser.Scene {
       if (this.player.highLevel > 0)  this._startHighWearoff()
       if (this.player.drunkLevel > 0) this._startDrunkWearoff()
       if (this.player.drunkLevel >= 8) this._playVomitSequence()
+    })
+
+    // ── MISSION RESULT LISTENERS ──────────────────────────────────────────
+    this.events.on('result:tikanheitto', ({ score }) => {
+      if (this._activeMission === 'tikanheitto_gold' && score >= 35) this._completeMission('tikanheitto_gold')
+      if (this._activeMission === 'tikanheitto_50'   && score >= 50) this._completeMission('tikanheitto_50')
+    })
+    this.events.on('result:molkky', ({ won, throws }) => {
+      if (this._activeMission === 'molkky_win'     && won)                this._completeMission('molkky_win')
+      if (this._activeMission === 'molkky_3throws' && won && throws <= 3) this._completeMission('molkky_3throws')
+    })
+    this.events.on('result:dockjump', ({ score }) => {
+      if (this._activeMission === 'dockjump_600' && score >= 600) this._completeMission('dockjump_600')
+    })
+    this.events.on('result:hideseek', ({ won }) => {
+      if (!won) return
+      if (this._activeMission === 'hideseek_win') this._completeMission('hideseek_win')
+      if (this._activeMission === 'hideseek_drunkhigh'
+        && this.player.drunkLevel > 0
+        && this.player.highLevel  > 0) this._completeMission('hideseek_drunkhigh')
+    })
+    this.events.on('result:weed', () => {
+      if (this._activeMission === 'smoke_weed') this._completeMission('smoke_weed')
     })
 
     this.events.on('activity:start', (activity) => {
@@ -125,6 +202,45 @@ export class GameScene extends Phaser.Scene {
           this.scene.launch('DrinkingScene', { zone: activity.zone })
           this.scene.sleep()
         })
+      } else if (activity.id === 'palju') {
+        this._inTransition = true
+        this.cameras.main.fadeOut(200, 0, 0, 0)
+        this.time.delayedCall(220, () => {
+          this.scene.launch('PaljuScene')
+          this.scene.sleep()
+        })
+      } else if (activity.id === 'sauna') {
+        this._inTransition = true
+        this.cameras.main.fadeOut(200, 0, 0, 0)
+        this.time.delayedCall(220, () => {
+          this.scene.launch('SaunaScene')
+          this.scene.sleep()
+        })
+      } else if (activity.id === 'never_have_i_ever') {
+        this._inTransition = true
+        this.cameras.main.fadeOut(200, 0, 0, 0)
+        this.time.delayedCall(220, () => {
+          this.scene.launch('NeverScene')
+          this.scene.sleep()
+        })
+      } else if (activity.id === 'hide_seek') {
+        this._startHideSeek()
+      } else if (activity.id === 'dock_jumping') {
+        this._inTransition = true
+        this.cameras.main.fadeOut(200, 0, 0, 0)
+        this.time.delayedCall(220, () => {
+          this.scene.launch('DockJumpScene')
+          this.scene.sleep()
+        })
+      } else if (activity.id === 'rowing') {
+        this._inTransition = true
+        this.cameras.main.fadeOut(200, 0, 0, 0)
+        this.time.delayedCall(220, () => {
+          this.scene.launch('RowingScene')
+          this.scene.sleep()
+        })
+      } else if (activity.zone === 'mission_board') {
+        this.scene.launch('MissionBoardScene')
       }
     })
   }
@@ -216,6 +332,47 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(220, () => {
       this.scene.launch('RoomScene', { roomId })
       this.scene.sleep()
+    })
+  }
+
+  // ── HIDE AND SEEK ────────────────────────────────────────────────────────
+
+  _startHideSeek() {
+    this._inTransition = true
+    this._hideSeekMode = true
+    this._hideSeekFoundSet = new Set()
+    this._hideSeekFoundCount = 0
+
+    this.npcs.forEach(npc => {
+      const spot = HIDE_SEEK_SPOTS[npc.data.id]
+      if (!spot) return
+      npc._body.body.reset(spot.x - 10, spot.y - 10)
+      npc.homeX = spot.x
+      npc.homeY = spot.y
+      npc._frozen = true
+      npc._gfx.setAlpha(0)
+      npc._shadow.setAlpha(0)
+      npc._nameTag.setVisible(false)
+      npc._exclamation.setVisible(false)
+      npc._stopWalkAnimation()
+    })
+
+    this.scene.launch('HideSeekScene')
+  }
+
+  endHideSeek() {
+    this._hideSeekMode = false
+    this._inTransition = false
+
+    this.npcs.forEach(npc => {
+      const spawn = NPC_SPAWN[npc.data.id] ?? { x: 700, y: 400 }
+      npc._body.body.reset(spawn.x - 10, spawn.y - 10)
+      npc.homeX = spawn.x
+      npc.homeY = spawn.y
+      npc._frozen = false
+      npc._gfx.setAlpha(1)
+      npc._shadow.setAlpha(0.35)
+      npc._nameTag.setVisible(true)
     })
   }
 
@@ -335,7 +492,7 @@ export class GameScene extends Phaser.Scene {
   // ── MAP BUILD ────────────────────────────────────────────────────────────
 
   _buildMap() {
-    const g = this.add.graphics()
+    const g = this.make.graphics({ add: false })
 
     // ── GRASS TILE GRID ──────────────────────────────────────────────
     for (let tx = 0; tx < MAP_W; tx += 32) {
@@ -734,6 +891,31 @@ export class GameScene extends Phaser.Scene {
       [352,  344, 1.0], [384,  398, 0.9],
     ].forEach(([tx, ty, scale]) => this._drawTree(g, tx, ty, scale))
 
+    // Bake all static map geometry into one texture — eliminates 2000+ per-frame draw calls
+    const mapRT = this.add.renderTexture(0, 0, MAP_W, MAP_H).setOrigin(0, 0).setDepth(0)
+    mapRT.draw(g, 0, 0)
+    g.destroy()
+
+    // Mission board sign (north wall of sauna, not baked into RT so it renders above)
+    const signG = this.add.graphics().setDepth(3)
+    const sx = ZONES.sauna.x + 38, sy = ZONES.sauna.y - 18
+    signG.fillStyle(0x000000, 0.28)
+    signG.fillRect(sx + 2, sy + 2, 56, 32)
+    signG.fillStyle(0x5a3010)
+    signG.fillRect(sx, sy, 56, 32)
+    signG.fillStyle(0x7a4820)
+    signG.fillRect(sx + 2, sy + 2, 52, 10)
+    signG.fillStyle(0xffffff, 0.7)
+    for (let pi = 0; pi < 3; pi++) {
+      signG.fillCircle(sx + 12 + pi * 16, sy + 8, 2)
+    }
+    signG.lineStyle(1.5, 0x3a1808, 0.9)
+    signG.strokeRect(sx, sy, 56, 32)
+    this.add.text(sx + 28, sy + 19, '📋 Missions', {
+      fontSize: '9px', fontFamily: 'monospace', color: '#f0e0b0',
+      stroke: '#1a0800', strokeThickness: 2,
+    }).setOrigin(0.5).setDepth(4)
+
     // ── LABELS ────────────────────────────────────────────────────────
     const lStyle = {
       fontSize: '15px', color: '#f8f4e8',
@@ -824,8 +1006,17 @@ export class GameScene extends Phaser.Scene {
       })
       .setOrigin(0.5).setScrollFactor(0).setDepth(16).setVisible(false)
 
-    this._doorPrompt = this.add
+    this._npcPrompt = this.add
       .text(width / 2, 110, '', {
+        fontSize: '14px', color: '#f0e8c8',
+        backgroundColor: '#00000099',
+        padding: { x: 14, y: 8 },
+        stroke: '#000000', strokeThickness: 2,
+      })
+      .setOrigin(0.5).setScrollFactor(0).setDepth(16).setVisible(false)
+
+    this._doorPrompt = this.add
+      .text(width / 2, 144, '', {
         fontSize: '14px', color: '#a8d8f8',
         backgroundColor: '#00000099',
         padding: { x: 14, y: 8 },
@@ -842,6 +1033,23 @@ export class GameScene extends Phaser.Scene {
         padding: { x: 6, y: 4 },
       })
       .setScrollFactor(0).setDepth(16).setVisible(false)
+
+    // ── MISSION HUD ───────────────────────────────────────────────────────
+    this._missionBanner = this.add.text(width / 2, 560, '', {
+      fontSize: '13px', fontFamily: 'monospace',
+      color: '#f1c40f',
+      backgroundColor: '#0a0a1ecc',
+      padding: { x: 12, y: 5 },
+      stroke: '#000000', strokeThickness: 2,
+    }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(28).setVisible(false)
+
+    this._missionTimer = this.add.text(width / 2, 595, '', {
+      fontSize: '12px', fontFamily: 'monospace',
+      color: '#ffffff',
+      backgroundColor: '#00000099',
+      padding: { x: 8, y: 3 },
+      stroke: '#000000', strokeThickness: 2,
+    }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(28).setVisible(false)
 
     this._buildTimePicker()
   }
@@ -928,10 +1136,26 @@ export class GameScene extends Phaser.Scene {
 
   _setupInput() {
     this._eKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E)
-    this._eKey.on('down', () => this._onInteract())
+    this._eKey.on('down', () => this._onInteractE())
+
+    this._qKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q)
+    this._qKey.on('down', () => this._onDialogueQ())
   }
 
-  _onInteract() {
+  // E — enter doors, start activities / minigames / scenes
+  _onInteractE() {
+    if (this._hideSeekMode) return
+    if (this.dialogueSystem.isOpen) return
+    if (this._nearDoorRoomId && !this._inTransition) {
+      this._enterRoom(this._nearDoorRoomId)
+      return
+    }
+    this.activitySystem.tryActivate()
+  }
+
+  // Q — talk to nearby NPC, or advance / close open dialogue
+  _onDialogueQ() {
+    if (this._hideSeekMode) return
     if (this.dialogueSystem.isOpen) {
       this.dialogueSystem.tryInteract()
       return
@@ -939,14 +1163,12 @@ export class GameScene extends Phaser.Scene {
     for (const npc of this.npcs) {
       if (npc.isNearPlayer(this.player.x, this.player.y)) {
         this.dialogueSystem.open(npc.data, this.timeSystem.currentPeriod)
+        if (npc.data.id === 'alwar' && this._activeMission === 'talk_alwar') {
+          this.time.delayedCall(300, () => this._completeMission('talk_alwar'))
+        }
         return
       }
     }
-    if (this._nearDoorRoomId && !this._inTransition) {
-      this._enterRoom(this._nearDoorRoomId)
-      return
-    }
-    this.activitySystem.tryActivate()
   }
 
   _onPeriodChange() {
@@ -1057,12 +1279,46 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.timeSystem.update(delta)
-    this.activitySystem.update(this.player.x, this.player.y)
+    if (!this._hideSeekMode) {
+      this.activitySystem.update(this.player.x, this.player.y)
+    }
     this.dialogueSystem.update(delta)
 
     this.npcs.forEach(npc =>
       npc.update(time, this.player.x, this.player.y, this.dialogueSystem)
     )
+
+    if (this._hideSeekMode) {
+      this._npcPrompt.setVisible(false)
+      this.npcs.forEach(npc => {
+        if (this._hideSeekFoundSet.has(npc.data.id)) return
+        const dist = Phaser.Math.Distance.Between(
+          this.player.x, this.player.y,
+          npc._body.body.x + 10, npc._body.body.y + 10
+        )
+        if (dist < 70) {
+          this._hideSeekFoundSet.add(npc.data.id)
+          this._hideSeekFoundCount++
+          npc._gfx.setAlpha(1)
+          npc._shadow.setAlpha(0.35)
+          this.time.delayedCall(2200, () => { npc._gfx.setAlpha(0.15); npc._shadow.setAlpha(0) })
+          this.events.emit('npc_found', {
+            char: npc.data,
+            quote: HIDE_SEEK_QUOTES[npc.data.id] ?? '...',
+            foundCount: this._hideSeekFoundCount,
+          })
+        }
+      })
+    } else if (!this.dialogueSystem.isOpen) {
+      const nearNpc = this.npcs.find(npc => npc.isNearPlayer(this.player.x, this.player.y))
+      if (nearNpc) {
+        this._npcPrompt.setText(`[Q] Talk to ${nearNpc.data.name}`).setVisible(true)
+      } else {
+        this._npcPrompt.setVisible(false)
+      }
+    } else {
+      this._npcPrompt.setVisible(false)
+    }
 
     // Y-depth sort: entities further south render in front of those further north
     this.player._gfx.setDepth(4 + this.player.y * 0.003)
@@ -1154,6 +1410,7 @@ export class GameScene extends Phaser.Scene {
           onComplete: () => {
             this.time.delayedCall(1400, () => {
               this.player.drunkLevel = Math.max(0, this.player.drunkLevel - 3)
+              if (this._activeMission === 'drink_puke') this._completeMission('drink_puke')
               this.tweens.add({
                 targets: [overlay, txt],
                 alpha: 0,
@@ -1169,6 +1426,70 @@ export class GameScene extends Phaser.Scene {
           },
         })
       },
+    })
+  }
+
+  // ── MISSION SYSTEM ───────────────────────────────────────────────────────
+
+  _startMission(id) {
+    if (this._activeMission || this._missions[id]?.done) return
+    this._activeMission   = id
+    this._missionSecsLeft = 180
+    this._missionBanner.setText(`📋 MISSION: ${this._missions[id].label}`).setVisible(true)
+    this._missionTimer.setText('⏱ 3:00').setColor('#ffffff').setVisible(true)
+    if (this._missionTickEvent) this._missionTickEvent.remove()
+    this._missionTickEvent = this.time.addEvent({
+      delay: 1000, repeat: 179,
+      callback: this._onMissionTick, callbackScope: this,
+    })
+  }
+
+  _onMissionTick() {
+    this._missionSecsLeft--
+    const m = Math.floor(this._missionSecsLeft / 60)
+    const s = this._missionSecsLeft % 60
+    this._missionTimer.setText(`⏱ ${m}:${String(s).padStart(2, '0')}`)
+    if (this._missionSecsLeft <= 30) this._missionTimer.setColor('#ff4444')
+    if (this._missionSecsLeft <= 0) this._failMission()
+  }
+
+  _completeMission(id) {
+    if (!this._activeMission || this._activeMission !== id) return
+    this._missions[id].done = true
+    this._clearMissionHUD()
+    this._showMissionFlash('MISSION COMPLETE! ✓', '#44ff88')
+  }
+
+  _failMission() {
+    this._clearMissionHUD()
+    this._showMissionFlash('MISSION FAILED', '#ff4444')
+  }
+
+  _clearMissionHUD() {
+    if (this._missionTickEvent) { this._missionTickEvent.remove(); this._missionTickEvent = null }
+    this._activeMission = null
+    this._missionBanner.setVisible(false)
+    this._missionTimer.setVisible(false).setColor('#ffffff')
+  }
+
+  _showMissionFlash(text, color) {
+    const W = this.scale.width
+    const H = this.scale.height
+    const flash = this.add.text(W / 2, H / 2, text, {
+      fontSize: '32px', fontFamily: 'monospace',
+      color,
+      stroke: '#000000', strokeThickness: 5,
+      backgroundColor: '#000000bb',
+      padding: { x: 28, y: 14 },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(30).setAlpha(0)
+
+    this.tweens.add({
+      targets: flash,
+      alpha: { from: 0, to: 1 },
+      y: { from: H / 2 + 20, to: H / 2 },
+      duration: 320, hold: 1600, yoyo: true,
+      ease: 'Sine.easeOut',
+      onComplete: () => flash.destroy(),
     })
   }
 

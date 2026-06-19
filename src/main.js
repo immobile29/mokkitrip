@@ -7,6 +7,13 @@ import { TikanheittoScene } from './scenes/TikanheittoScene.js'
 import { MolkkyScene } from './scenes/MolkkyScene.js'
 import { WeedScene } from './scenes/WeedScene.js'
 import { DrinkingScene } from './scenes/DrinkingScene.js'
+import { PaljuScene } from './scenes/PaljuScene.js'
+import { SaunaScene } from './scenes/SaunaScene.js'
+import { NeverScene } from './scenes/NeverScene.js'
+import { HideSeekScene } from './scenes/HideSeekScene.js'
+import { DockJumpScene } from './scenes/DockJumpScene.js'
+import { RowingScene } from './scenes/RowingScene.js'
+import { MissionBoardScene } from './scenes/MissionBoardScene.js'
 
 const config = {
   type: Phaser.AUTO,
@@ -17,7 +24,7 @@ const config = {
     default: 'arcade',
     arcade: { gravity: { y: 0 }, debug: false },
   },
-  scene: [BootScene, MenuScene, GameScene, RoomScene, TikanheittoScene, MolkkyScene, WeedScene, DrinkingScene],
+  scene: [BootScene, MenuScene, GameScene, RoomScene, TikanheittoScene, MolkkyScene, WeedScene, DrinkingScene, PaljuScene, SaunaScene, NeverScene, HideSeekScene, DockJumpScene, RowingScene, MissionBoardScene],
   parent: 'game-container',
   scale: {
     mode: Phaser.Scale.FIT,
@@ -25,4 +32,4 @@ const config = {
   },
 }
 
-new Phaser.Game(config)
+window.game = new Phaser.Game(config)

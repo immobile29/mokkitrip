@@ -28,6 +28,7 @@ export class NPC {
     this._isMoving    = false
     this._wobbleTween = null
     this._scaleTween  = null
+    this._frozen      = false
 
     this._nameTag = scene.add
       .text(x, y - 30, characterData.name, {
@@ -149,6 +150,10 @@ export class NPC {
   }
 
   update(time, playerX, playerY, dialogueSystem) {
+    if (this._frozen) {
+      this._body.body.setVelocity(0, 0)
+      return
+    }
     const dist   = Phaser.Math.Distance.Between(this.x, this.y, playerX, playerY)
     const nearby = dist < 50
 

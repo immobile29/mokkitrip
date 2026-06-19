@@ -728,6 +728,7 @@ export class WeedScene extends Phaser.Scene {
       const hits = Math.max(1, this._goodHits)
       for (let i = 0; i < hits; i++) gs.player.addWeed()
     }
+    gs?.events.emit('result:weed', {})
     this.scene.stop()
     this.scene.wake('GameScene')
   }

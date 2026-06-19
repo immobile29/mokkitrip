@@ -339,6 +339,7 @@ export class MolkkyScene extends Phaser.Scene {
     const W = this.scale.width
     const H = this.scale.height
     this._phase = 'win'
+    this._won = true
     this._hintText.setText('[ SPACE ]  Return').setColor('#aaaaaa')
     this.add.rectangle(W / 2, H / 2, 420, 220, 0x0a2a0a, 0.95)
     this.add.rectangle(W / 2, H / 2, 420, 220, 0x000000, 0).setStrokeStyle(2, 0x44ff44)
@@ -360,6 +361,7 @@ export class MolkkyScene extends Phaser.Scene {
   }
 
   _exit() {
+    this.scene.get('GameScene')?.events.emit('result:molkky', { won: !!this._won, throws: this._throws })
     this.cameras.main.fadeOut(300, 0, 0, 0)
     this.time.delayedCall(320, () => {
       this.scene.stop()
