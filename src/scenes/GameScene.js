@@ -26,7 +26,7 @@ const ZONES = {
   palju_bar:    { x: 1255, y: 422,  width: 80,   height: 56  },
   dock:          { x: 1060, y: 850,  width: 270,  height: 100 },
   dock_left:     { x: 130,  y: 820,  width: 200,  height: 80  },
-  dock_edge:     { x: 1300, y: 855,  width: 70,   height: 65  },
+  dock_edge:     { x: 1062, y: 912,  width: 88,   height: 38  },
   beach:         { x: 0,    y: 860,  width: 1050, height: 80  },
   mission_board: { x: 1130, y: 196,  width: 140,  height: 52  },
 }
@@ -172,6 +172,9 @@ export class GameScene extends Phaser.Scene {
     this.events.on('result:weed', () => {
       if (this._activeMission === 'smoke_weed') this._completeMission('smoke_weed')
     })
+    this.events.on('result:grilling', () => {
+      // future mission hooks go here
+    })
 
     this.events.on('activity:start', (activity) => {
       if (activity.id === 'tikanheitto') {
@@ -237,6 +240,20 @@ export class GameScene extends Phaser.Scene {
         this.cameras.main.fadeOut(200, 0, 0, 0)
         this.time.delayedCall(220, () => {
           this.scene.launch('RowingScene')
+          this.scene.sleep()
+        })
+      } else if (activity.id === 'sup') {
+        this._inTransition = true
+        this.cameras.main.fadeOut(200, 0, 0, 0)
+        this.time.delayedCall(220, () => {
+          this.scene.launch('SUPScene')
+          this.scene.sleep()
+        })
+      } else if (activity.id === 'grilling') {
+        this._inTransition = true
+        this.cameras.main.fadeOut(200, 0, 0, 0)
+        this.time.delayedCall(220, () => {
+          this.scene.launch('GrillingScene')
           this.scene.sleep()
         })
       } else if (activity.zone === 'mission_board') {
@@ -788,11 +805,17 @@ export class GameScene extends Phaser.Scene {
     gDock.lineStyle(0, 0, 0)
     gDock.fillStyle(0x4a2810)
     gDock.fillRect(ZONES.dock.x, ZONES.dock.y + ZONES.dock.height - 6, ZONES.dock.width, 6)
-    // Metal ladder into water
-    gDock.fillStyle(0x888888)
-    gDock.fillRect(ZONES.dock.x + 20, ZONES.dock.y + ZONES.dock.height - 2, 4, 18)
-    gDock.fillRect(ZONES.dock.x + 28, ZONES.dock.y + ZONES.dock.height - 2, 4, 18)
-    gDock.fillRect(ZONES.dock.x + 18, ZONES.dock.y + ZONES.dock.height + 8, 18, 3)
+    // Metal ladder into water — marks the dock jump entry point
+    const ldx = ZONES.dock.x + 20, ldy = ZONES.dock.y + ZONES.dock.height - 4
+    gDock.fillStyle(0x999999)
+    gDock.fillRect(ldx,      ldy, 4, 22)   // left rail
+    gDock.fillRect(ldx + 10, ldy, 4, 22)   // right rail
+    for (let rung = 4; rung < 22; rung += 7) {
+      gDock.fillRect(ldx, ldy + rung, 14, 3)  // rungs
+    }
+    // Yellow safety stripe at ladder edge
+    gDock.fillStyle(0xf0c000, 0.7)
+    gDock.fillRect(ZONES.dock.x + 2, ZONES.dock.y + ZONES.dock.height - 8, 44, 5)
 
     // Left dock
     gDock.fillStyle(0x1a1a1a)
