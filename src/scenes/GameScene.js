@@ -175,6 +175,9 @@ export class GameScene extends Phaser.Scene {
     this.events.on('result:grilling', () => {
       // future mission hooks go here
     })
+    this.events.on('result:drunkdriving', ({ outcome }) => {
+      // future mission hooks go here
+    })
 
     this.events.on('activity:start', (activity) => {
       if (activity.id === 'tikanheitto') {
@@ -254,6 +257,32 @@ export class GameScene extends Phaser.Scene {
         this.cameras.main.fadeOut(200, 0, 0, 0)
         this.time.delayedCall(220, () => {
           this.scene.launch('GrillingScene')
+          this.scene.sleep()
+        })
+      } else if (activity.id === 'drunk_driving') {
+        if (this.player.drunkLevel < 2) {
+          const px = this.player.x, py = this.player.y
+          const cam = this.cameras.main
+          const sx = (px - cam.worldView.x) * cam.zoom
+          const sy = (py - cam.worldView.y) * cam.zoom - 40
+          const t = this.add.text(sx, sy, "You're too sober for this. Have a drink first.", {
+            fontSize: '13px', fontFamily: 'monospace', color: '#ff8844',
+            stroke: '#000', strokeThickness: 3,
+          }).setScrollFactor(0).setOrigin(0.5).setDepth(200)
+          this.tweens.add({
+            targets: t, alpha: 0, y: sy - 28,
+            duration: 600, delay: 3500,
+            onComplete: () => t.destroy(),
+          })
+          return
+        }
+        this._inTransition = true
+        this.cameras.main.fadeOut(200, 0, 0, 0)
+        this.time.delayedCall(220, () => {
+          this.scene.launch('DrunkDrivingScene', {
+            drunkLevel: this.player.drunkLevel,
+            gameHour: this.timeSystem.gameHour,
+          })
           this.scene.sleep()
         })
       } else if (activity.zone === 'mission_board') {

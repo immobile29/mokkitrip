@@ -112,15 +112,6 @@ export const ACTIVITIES = {
     prompt: 'Press E to play Tikanheitto!',
     description: 'Finnish darts. Five throws. Aim for the bullseye.',
   },
-  DRINKING_TERRACE: {
-    id: 'drinking',
-    name: 'Drinking',
-    icon: '🍺',
-    zone: 'terrace',
-    timePeriods: [TIME_PERIODS.EVENING, TIME_PERIODS.NIGHT, TIME_PERIODS.LATE_NIGHT],
-    prompt: 'Press E to grab a drink on the terrace!',
-    description: 'Elliot set up a bar table on the terrace. Classic.',
-  },
   DRINKING_PALJU_BAR: {
     id: 'drinking',
     name: 'Drinks by the palju',
@@ -156,5 +147,14 @@ export const ACTIVITIES = {
     timePeriods: [TIME_PERIODS.DAY, TIME_PERIODS.EVENING, TIME_PERIODS.NIGHT, TIME_PERIODS.LATE_NIGHT],
     prompt: 'Press E to check the Mission Board',
     description: 'A bulletin board behind the sauna. What will you do today?',
+  },
+  DRUNK_DRIVING: {
+    id: 'drunk_driving',
+    name: 'Drunk Driving',
+    icon: '🚗',
+    zone: 'parking',
+    timePeriods: [TIME_PERIODS.DAY, TIME_PERIODS.EVENING, TIME_PERIODS.NIGHT, TIME_PERIODS.LATE_NIGHT],
+    prompt: 'Press E to get in the car!',
+    description: 'The store might still be open...',
   },
 }

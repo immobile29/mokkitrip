@@ -84,6 +84,12 @@ export class RowingScene extends Phaser.Scene {
 
   // ── LIFECYCLE ─────────────────────────────────────────────────────────────
 
+  preload() {
+    if (!this.cache.audio.has('the_best_song_ever')) {
+      this.load.audio('the_best_song_ever', 'assets/sounds/the_best_song_ever.mp3')
+    }
+  }
+
   create() {
     // Pick 2 random companions (exclude the seagull)
     const pool     = CHARACTER_LIST.filter(c => !c.isSeagull)
@@ -125,6 +131,9 @@ export class RowingScene extends Phaser.Scene {
 
     this.cameras.main.fadeIn(400, 0, 0, 0)
     this._scheduleNextComment()
+
+    this._music = this.sound.add('the_best_song_ever', { loop: true, volume: 0.55 })
+    this._music.play()
   }
 
   update(time) {
@@ -275,6 +284,17 @@ export class RowingScene extends Phaser.Scene {
     // Head
     g.fillStyle(0xfafafa)
     g.fillCircle(ax, ay - 13, 7 * s)
+    // Sombrero
+    g.fillStyle(0x000000, 0.18); g.fillEllipse(ax + 1, ay - 20, 24 * s, 5 * s)
+    g.fillStyle(0xcc8800);       g.fillEllipse(ax,     ay - 21, 22 * s, 4 * s)
+    g.fillStyle(0xee9900);       g.fillEllipse(ax,     ay - 24, 11 * s, 8 * s)
+    g.fillStyle(0xffaa00, 0.55); g.fillEllipse(ax - 1, ay - 27, 5 * s, 3 * s)
+    g.lineStyle(1, 0xdd2200, 0.9); g.strokeEllipse(ax, ay - 21, 11 * s, 4 * s)
+    g.fillStyle(0xdd2200)
+    for (let i = 0; i < 6; i++) {
+      const da = (i / 6) * Math.PI * 2
+      g.fillCircle(ax + Math.cos(da) * 9 * s, ay - 21 + Math.sin(da) * 1.8 * s, 0.9)
+    }
     // Beak
     g.fillStyle(0xe08820)
     g.fillTriangle(ax + 5 * s, ay - 12 * s, ax + 12 * s, ay - 9 * s, ax + 5 * s, ay - 8 * s)
@@ -685,6 +705,7 @@ export class RowingScene extends Phaser.Scene {
   _exit() {
     if (this._exiting) return
     this._exiting = true
+    this._music?.stop()
     if (this._commentTimer) this._commentTimer.remove()
 
     const gs = this.scene.get('GameScene')

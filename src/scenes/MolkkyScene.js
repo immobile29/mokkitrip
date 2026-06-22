@@ -19,6 +19,12 @@ export class MolkkyScene extends Phaser.Scene {
     super({ key: 'MolkkyScene' })
   }
 
+  preload() {
+    if (!this.cache.audio.has('a_little_bit_nonce')) {
+      this.load.audio('a_little_bit_nonce', 'assets/sounds/a_little_bit_nonce.mp3')
+    }
+  }
+
   create() {
     const W = this.scale.width
     const H = this.scale.height
@@ -69,6 +75,9 @@ export class MolkkyScene extends Phaser.Scene {
 
     this._enterPhase('h_bar')
     this.cameras.main.fadeIn(300, 0, 0, 0)
+
+    this._music = this.sound.add('a_little_bit_nonce', { loop: true, volume: 0.55 })
+    this._music.play()
   }
 
   _txt(x, y, str, size, color) {
@@ -361,6 +370,7 @@ export class MolkkyScene extends Phaser.Scene {
   }
 
   _exit() {
+    this._music?.stop()
     this.scene.get('GameScene')?.events.emit('result:molkky', { won: !!this._won, throws: this._throws })
     this.cameras.main.fadeOut(300, 0, 0, 0)
     this.time.delayedCall(320, () => {

@@ -79,6 +79,12 @@ export class SaunaScene extends Phaser.Scene {
 
   // ── LIFECYCLE ──────────────────────────────────────────────────────────────
 
+  preload() {
+    if (!this.cache.audio.has('so_damn_hot')) {
+      this.load.audio('so_damn_hot', 'assets/sounds/so_damn_hot.mp3')
+    }
+  }
+
   create() {
     this._phase        = 'sitting'
     this._beersLeft    = MAX_BEERS
@@ -108,6 +114,9 @@ export class SaunaScene extends Phaser.Scene {
 
     this.cameras.main.fadeIn(400, 0, 0, 0)
     this._scheduleNextComment()
+
+    this._music = this.sound.add('so_damn_hot', { loop: true, volume: 0.55 })
+    this._music.play()
   }
 
   update(time, _delta) {
@@ -708,6 +717,7 @@ export class SaunaScene extends Phaser.Scene {
   // ── CROSS-NAVIGATION ──────────────────────────────────────────────────────
 
   _goToPalju() {
+    this._music?.stop()
     if (this._commentTimer) this._commentTimer.remove()
     const gs = this.scene.get('GameScene')
     if (gs && gs.player) {
@@ -723,6 +733,7 @@ export class SaunaScene extends Phaser.Scene {
   // ── EXIT ──────────────────────────────────────────────────────────────────
 
   _exit() {
+    this._music?.stop()
     if (this._commentTimer) this._commentTimer.remove()
     const gs = this.scene.get('GameScene')
     if (gs && gs.player) {

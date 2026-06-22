@@ -65,6 +65,7 @@ export class PaljuScene extends Phaser.Scene {
 
   // ── LIFECYCLE ──────────────────────────────────────────────────────────────
 
+
   create() {
     this._phase       = 'sitting'
     this._beersLeft   = MAX_BEERS

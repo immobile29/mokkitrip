@@ -16,6 +16,7 @@ import { RowingScene } from './scenes/RowingScene.js'
 import { MissionBoardScene } from './scenes/MissionBoardScene.js'
 import { SUPScene } from './scenes/SUPScene.js'
 import { GrillingScene } from './scenes/GrillingScene.js'
+import { DrunkDrivingScene } from './scenes/DrunkDrivingScene.js'
 
 const config = {
   type: Phaser.AUTO,
@@ -26,7 +27,7 @@ const config = {
     default: 'arcade',
     arcade: { gravity: { y: 0 }, debug: false },
   },
-  scene: [BootScene, MenuScene, GameScene, RoomScene, TikanheittoScene, MolkkyScene, WeedScene, DrinkingScene, PaljuScene, SaunaScene, NeverScene, HideSeekScene, DockJumpScene, RowingScene, MissionBoardScene, SUPScene, GrillingScene],
+  scene: [BootScene, MenuScene, GameScene, RoomScene, TikanheittoScene, MolkkyScene, WeedScene, DrinkingScene, PaljuScene, SaunaScene, NeverScene, HideSeekScene, DockJumpScene, RowingScene, MissionBoardScene, SUPScene, GrillingScene, DrunkDrivingScene],
   parent: 'game-container',
   scale: {
     mode: Phaser.Scale.FIT,

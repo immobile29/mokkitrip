@@ -622,6 +622,21 @@ export class GrillingScene extends Phaser.Scene {
     // Head
     g.fillStyle(0x000000, 0.12); g.fillCircle(ax + 2, ay + 2, 18)
     g.fillStyle(0xffffff); g.fillCircle(ax, ay, 18)
+    // Sombrero
+    g.fillStyle(0x000000, 0.18); g.fillEllipse(ax + 2, ay - 16, 58, 12)   // brim shadow
+    g.fillStyle(0xcc8800); g.fillEllipse(ax, ay - 18, 54, 10)             // brim
+    g.fillStyle(0xee9900); g.fillEllipse(ax, ay - 22, 28, 18)             // crown
+    g.fillStyle(0xffaa00, 0.6); g.fillEllipse(ax - 2, ay - 26, 12, 7)    // crown highlight
+    // Decorative band
+    g.lineStyle(2, 0xdd2200, 0.9)
+    g.strokeEllipse(ax, ay - 18, 28, 8)
+    // Brim trim dots
+    g.fillStyle(0xdd2200)
+    for (let i = 0; i < 8; i++) {
+      const da = (i / 8) * Math.PI * 2
+      g.fillCircle(ax + Math.cos(da) * 22, ay - 18 + Math.sin(da) * 4, 2)
+    }
+
     // Beak
     g.fillStyle(0xffcc00)
     g.fillTriangle(ax + 14, ay - 2, ax + 26, ay, ax + 14, ay + 4)

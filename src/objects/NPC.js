@@ -139,6 +139,17 @@ export class NPC {
     // Head
     g.fillStyle(0xfafafa)
     g.fillCircle(0, -18, 9)
+    // Sombrero
+    g.fillStyle(0x000000, 0.18); g.fillEllipse(1, -27, 34, 7)   // brim shadow
+    g.fillStyle(0xcc8800);       g.fillEllipse(0, -28, 32, 6)   // brim
+    g.fillStyle(0xee9900);       g.fillEllipse(0, -31, 16, 11)  // crown
+    g.fillStyle(0xffaa00, 0.55); g.fillEllipse(-1, -34, 7, 5)   // crown highlight
+    g.lineStyle(1.5, 0xdd2200, 0.9); g.strokeEllipse(0, -28, 16, 5)  // band
+    g.fillStyle(0xdd2200)
+    for (let i = 0; i < 7; i++) {
+      const da = (i / 7) * Math.PI * 2
+      g.fillCircle(Math.cos(da) * 13, -28 + Math.sin(da) * 2.5, 1.2)
+    }
     // Beak
     g.fillStyle(0xe08820)
     g.fillTriangle(7, -17, 16, -13, 7, -10)

@@ -83,6 +83,12 @@ export class SUPScene extends Phaser.Scene {
 
   // ── LIFECYCLE ──────────────────────────────────────────────────────────────
 
+  preload() {
+    if (!this.cache.audio.has('clam_city')) {
+      this.load.audio('clam_city', 'assets/sounds/clam_city.mp3')
+    }
+  }
+
   create() {
     // ── player state ──
     this._x      = DOCK.x
@@ -146,6 +152,9 @@ export class SUPScene extends Phaser.Scene {
     this._bindKeys()
 
     this.cameras.main.fadeIn(300, 0, 0, 0)
+
+    this._music = this.sound.add('clam_city', { loop: true, volume: 0.55 })
+    this._music.play()
   }
 
   update(time, delta) {
@@ -1018,6 +1027,7 @@ export class SUPScene extends Phaser.Scene {
   _exit() {
     if (this._exiting) return
     this._exiting = true
+    this._music?.stop()
     this.scene.get('GameScene')?.events.emit('result:sup', { time: this._elapsed })
     this.cameras.main.fadeOut(350, 0, 0, 0)
     this.time.delayedCall(370, () => {
