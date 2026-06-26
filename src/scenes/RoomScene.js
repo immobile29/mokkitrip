@@ -129,6 +129,28 @@ export class RoomScene extends Phaser.Scene {
       }).setOrigin(0.5).setScrollFactor(0).setDepth(10).setVisible(false)
     }
 
+    // Online Casino prompt — only shown in cottage_living at late night
+    this._gamblingPrompt = null
+    if (this._roomId === 'cottage_living') {
+      this._gamblingPrompt = this.add.text(vw / 2, oy + def.h - 90, '[E] 🎰 Online Casino', {
+        fontSize: '14px', color: '#44aaff',
+        backgroundColor: '#00000099',
+        padding: { x: 14, y: 8 },
+        stroke: '#000000', strokeThickness: 2,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(10).setVisible(false)
+    }
+
+    // Saunaklonkku prompt — only shown in sauna room during evening/night/late night
+    this._klonkkuPrompt = null
+    if (this._roomId === 'sauna') {
+      this._klonkkuPrompt = this.add.text(vw / 2, oy + def.h - 52, '[E] 🧖 Play Saunaklonkku', {
+        fontSize: '14px', color: '#f0c070',
+        backgroundColor: '#00000099',
+        padding: { x: 14, y: 8 },
+        stroke: '#000000', strokeThickness: 2,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(10).setVisible(false)
+    }
+
     this._eKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E)
     this._escKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC)
     this._escKey.on('down', () => this._exit())
@@ -841,12 +863,28 @@ export class RoomScene extends Phaser.Scene {
     if (this._neverPrompt) {
       const gs = this.scene.get('GameScene')
       const period = gs?.timeSystem?.currentPeriod
-      const isNight = period === 'night' || period === 'late_night'
-      this._neverPrompt.setVisible(isNight)
+      this._neverPrompt.setVisible(period === 'night')
+    }
+
+    if (this._gamblingPrompt) {
+      const gs = this.scene.get('GameScene')
+      const period = gs?.timeSystem?.currentPeriod
+      this._gamblingPrompt.setVisible(period === 'late_night')
+    }
+
+    if (this._klonkkuPrompt) {
+      const gs = this.scene.get('GameScene')
+      const period = gs?.timeSystem?.currentPeriod
+      const ok = period === 'evening' || period === 'night' || period === 'late_night'
+      this._klonkkuPrompt.setVisible(ok)
     }
 
     if (!this._exiting && Phaser.Input.Keyboard.JustDown(this._eKey)) {
-      if (this._neverPrompt?.visible) {
+      if (this._klonkkuPrompt?.visible) {
+        this._launchSaunaklonkkuScene()
+      } else if (this._gamblingPrompt?.visible) {
+        this._launchGamblingScene()
+      } else if (this._neverPrompt?.visible) {
         this._launchNeverScene()
       } else if (ply > exitY - 50) {
         this._exit()
@@ -862,6 +900,26 @@ export class RoomScene extends Phaser.Scene {
     this.cameras.main.fadeOut(200, 0, 0, 0)
     this.time.delayedCall(220, () => {
       this.scene.launch('NeverScene')
+      this.scene.sleep()
+    })
+  }
+
+  _launchGamblingScene() {
+    if (this._exiting) return
+    this._exiting = true
+    this.cameras.main.fadeOut(200, 0, 0, 0)
+    this.time.delayedCall(220, () => {
+      this.scene.launch('GamblingScene')
+      this.scene.sleep()
+    })
+  }
+
+  _launchSaunaklonkkuScene() {
+    if (this._exiting) return
+    this._exiting = true
+    this.cameras.main.fadeOut(200, 0, 0, 0)
+    this.time.delayedCall(220, () => {
+      this.scene.launch('SaunaklonkkuScene')
       this.scene.sleep()
     })
   }

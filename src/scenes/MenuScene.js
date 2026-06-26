@@ -66,20 +66,6 @@ export class MenuScene extends Phaser.Scene {
       this.add.rectangle(tx + 16, H - 50, 32, 100, alt ? 0x3a8830 : 0x44a038)
     }
 
-    // Animated lake waves
-    const LAKE_Y = H - 36
-    ;[
-      { color: 0x3090d8, alpha: 0.65, yBase: LAKE_Y,      rw: 62, rh: 5, stride: 100, dur: 3600 },
-      { color: 0x3090d8, alpha: 0.42, yBase: LAKE_Y + 13, rw: 44, rh: 4, stride: 100, dur: 5000 },
-    ].forEach(({ color, alpha, yBase, rw, rh, stride, dur }) => {
-      const gw = this.add.graphics()
-      gw.fillStyle(color, alpha)
-      for (let wx = -stride; wx < W + stride; wx += stride) {
-        gw.fillRoundedRect(wx, yBase, rw, rh, 2)
-        gw.fillRoundedRect(wx + rw + 22, yBase, Math.round(rw * 0.5), rh, 2)
-      }
-      this.tweens.add({ targets: gw, x: -stride, duration: dur, repeat: -1, ease: 'Linear' })
-    })
 
     // DISTANT TREELINE SILHOUETTE
     const gDistTree = this.add.graphics()
@@ -133,7 +119,7 @@ export class MenuScene extends Phaser.Scene {
     }
 
     // TITLE CARD
-    const cardW = 540, cardH = 192
+    const cardW = 540, cardH = 120
     const cardY = H / 2 - 70
 
     const gCard = this.add.graphics()
@@ -160,18 +146,6 @@ export class MenuScene extends Phaser.Scene {
       stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5)
 
-    const gDiv = this.add.graphics()
-    gDiv.fillStyle(0xf1c40f, 0.35)
-    gDiv.fillRect(W/2 - 200, cardY + 114, 400, 1)
-
-    this.add.text(W/2, cardY + 128, 'Saunat. Bieret. Alwar.', {
-      fontSize: '14px', color: '#c8a840', fontStyle: 'italic',
-      stroke: '#000000', strokeThickness: 2,
-    }).setOrigin(0.5)
-
-    this.add.text(W/2, cardY + 152, 'No supervision. No regrets. Mostly.', {
-      fontSize: '11px', color: '#606878', fontStyle: 'italic',
-    }).setOrigin(0.5)
 
     // START BUTTON
     const btnY = H / 2 + 104
@@ -201,35 +175,15 @@ export class MenuScene extends Phaser.Scene {
       .rectangle(W/2, btnY, btnW, 54, 0x000000, 0)
       .setInteractive({ useHandCursor: true })
 
-    this.add.text(W/2, btnY - 8, 'MENNÄÄN MÖKKIIN', {
+    this.add.text(W/2, btnY, 'Mennään mökille', {
       fontSize: '16px', color: '#ffffff', fontStyle: 'bold',
       stroke: '#0a3a18', strokeThickness: 3,
-    }).setOrigin(0.5)
-    this.add.text(W/2, btnY + 12, "Let's go to the cabin", {
-      fontSize: '11px', color: '#90e890', fontStyle: 'italic',
     }).setOrigin(0.5)
 
     btnHitbox.on('pointerover',  () => drawBtn(0x27ae60, 0xffffff))
     btnHitbox.on('pointerout',   () => drawBtn(0x1e6b30, 0xffd080))
     btnHitbox.on('pointerdown',  () => this.scene.start('GameScene'))
 
-    // CONTROLS HINT
-    this.add.text(W/2, btnY + 46, '[ WASD ]  Move   •   [ E ]  Talk / Enter   •   [ 1 / 2 / 3 ]  Reply', {
-      fontSize: '11px', color: '#50607a',
-      stroke: '#000000', strokeThickness: 2,
-    }).setOrigin(0.5)
-
-    // CAST LIST
-    this.add.text(W/2, H - 90, 'Featuring:', {
-      fontSize: '11px', color: '#4a6070',
-    }).setOrigin(0.5)
-    this.add.text(W/2, H - 73,
-      'Jon  •  Alwar  •  Elliot  •  Schmaxel  •  Mark  •  Edu  •  Robert  •  Nixu  •  Nikkebre  •  Immobile  •  Allu',
-      { fontSize: '11px', color: '#7a9abc' }
-    ).setOrigin(0.5)
-    this.add.text(W/2, H - 52, 'v0.1  —  A Finnish midsummer experience', {
-      fontSize: '10px', color: '#3a5068', fontStyle: 'italic',
-    }).setOrigin(0.5)
 
     this.input.keyboard.once('keydown-ENTER', () => this.scene.start('GameScene'))
     this.input.keyboard.once('keydown-SPACE', () => this.scene.start('GameScene'))

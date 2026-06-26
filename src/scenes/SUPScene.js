@@ -1028,7 +1028,7 @@ export class SUPScene extends Phaser.Scene {
     if (this._exiting) return
     this._exiting = true
     this._music?.stop()
-    this.scene.get('GameScene')?.events.emit('result:sup', { time: this._elapsed })
+    this.scene.get('GameScene')?.events.emit('result:sup', { time: this._elapsed, lives: this._lives })
     this.cameras.main.fadeOut(350, 0, 0, 0)
     this.time.delayedCall(370, () => {
       this.scene.stop()

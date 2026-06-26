@@ -427,6 +427,7 @@ export class DrunkDrivingScene extends Phaser.Scene {
     this._invTimer = 1500
     this.cameras.main.shake(280, 0.014)
     this._showFloat(this._x, this._y - 40, `💥 -${damage} HP`, '#ff4444', 15)
+    this.scene.get('GameScene')?.events.emit('hit:drunkdriving')
     if (this._hp <= 0) {
       this._crashReason = reason
       this._triggerCrash()

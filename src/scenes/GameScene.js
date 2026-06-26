@@ -134,6 +134,9 @@ export class GameScene extends Phaser.Scene {
       { id: 'molkky_3throws',     label: 'Win Mölkky in 3 throws or less', hint: 'Hit exactly 25 in ≤ 3 throws' },
       { id: 'hideseek_drunkhigh', label: 'Win H&S while drunk AND high',    hint: 'Get wasted first, then seek' },
       { id: 'tikanheitto_50',     label: 'Perfect 50 in Tikanheitto',       hint: '5 bullseyes in a row' },
+      { id: 'drunkdriving_stars', label: 'Flawless drunk drive',             hint: 'All stars, zero crashes' },
+      { id: 'sup_gold_nolives',   label: 'Gold SUP run, no damage',         hint: 'Finish under 45s with all 5 lives' },
+      { id: 'casino_500',         label: 'Hit 500€ at the online casino',   hint: 'Reach a balance of 500€ in one session' },
     ]
     this._missions      = {}
     for (const d of MISSION_DEFS) this._missions[d.id] = { ...d, done: false }
@@ -175,8 +178,22 @@ export class GameScene extends Phaser.Scene {
     this.events.on('result:grilling', () => {
       // future mission hooks go here
     })
-    this.events.on('result:drunkdriving', ({ outcome }) => {
-      // future mission hooks go here
+    this.events.on('hit:drunkdriving', () => {
+      if (this._activeMission === 'drunkdriving_stars') this._failMission()
+    })
+    this.events.on('result:drunkdriving', ({ outcome, stars }) => {
+      if (this._activeMission === 'drunkdriving_stars' && outcome === 'success' && stars === 10)
+        this._completeMission('drunkdriving_stars')
+    })
+    this.events.on('balance:gambling', (balance) => {
+      if (this._activeMission === 'casino_500' && balance >= 500) this._completeMission('casino_500')
+    })
+    this.events.on('result:sup', ({ time, lives }) => {
+      if (this._activeMission === 'sup_gold_nolives') {
+        const secs = Math.floor(time / 1000)
+        if (secs < 45 && lives === 5) this._completeMission('sup_gold_nolives')
+        else this._failMission()
+      }
     })
 
     this.events.on('activity:start', (activity) => {
@@ -1515,6 +1532,11 @@ export class GameScene extends Phaser.Scene {
   _failMission() {
     this._clearMissionHUD()
     this._showMissionFlash('MISSION FAILED', '#ff4444')
+  }
+
+  _quitMission() {
+    this._clearMissionHUD()
+    this._showMissionFlash('MISSION ABANDONED', '#ff8844')
   }
 
   _clearMissionHUD() {
