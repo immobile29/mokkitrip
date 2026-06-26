@@ -65,7 +65,7 @@
       display: none;
     }
   </style>
-  <script type="module" crossorigin src="./assets/index-CVKLrqIf.js"></script>
+  <script type="module" crossorigin src="./assets/index-DZK2xsi8.js"></script>
 </head>
 <body>
   <!-- Password gate — sits on top while game loads in background -->
@@ -92,9 +92,10 @@
       }
     }
     document.getElementById('gate-btn').addEventListener('click', gateCheck)
-    document.getElementById('gate-pw').addEventListener('keydown', e => {
-      if (e.key === 'Enter') gateCheck()
-    })
+    const pwInput = document.getElementById('gate-pw')
+    pwInput.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') gateCheck() })
+    pwInput.addEventListener('keyup',   e => e.stopPropagation())
+    pwInput.addEventListener('keypress',e => e.stopPropagation())
   </script>
 
   <div id="game-container"></div>
